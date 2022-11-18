@@ -32,6 +32,34 @@ impl Default for Game {
     }
 }
 
+fn player_exists(tag: &String, game_data: &Game) -> bool {
+    for player in &game_data.players {
+        if tag.to_string() == player.tag { 
+            true;
+        }
+    }
+
+    false
+}
+
+fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
+    let chunked_buf = buffer.chunks(2);
+
+    for x in chunked_buf {
+        println!("{} -- {}", x[0], x[1]);
+
+        if !player_exists(&x[1], &game_data) {
+            game_data.players.push(
+                Player { 
+                    igns: vec![x[0].clone()], 
+                    tag: x[1].clone(), 
+                    score: 0 
+                }
+            );
+        }
+    }
+}
+
 fn main() {
     let filepath = "/home/donal/projects/mocd/saves/mp_autosave.eu4";
     let mut game_data = Game::default();
@@ -39,7 +67,7 @@ fn main() {
     let lines = read_lines(filepath).expect("lines extracted from file");
     
     let mut reading_player_countries = false;
-    let mut player_countries_buf : Vec<String> = Vec::new();
+    let mut player_countries_buf: Vec<String> = Vec::new();
 
     for line in lines {
         if let Ok(ip) = line {
@@ -52,6 +80,7 @@ fn main() {
             if reading_player_countries {
                 if ip.contains("}") && (ip.chars().count() == 1) {
                     reading_player_countries = false;
+                    insert_country_data(&player_countries_buf, &mut game_data);
                     continue;
                 }
 
@@ -65,6 +94,10 @@ fn main() {
     }
 
     println!("Yo");
+
+    for x in &game_data.players {
+        println!("{}", x.tag);
+    }
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
