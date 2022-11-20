@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{self, BufRead};
+use std::iter::Enumerate;
 use std::path::Path;
 
 struct Player {
@@ -57,6 +58,27 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
                     score: 0 
                 }
             );
+        } else {
+            for player in &mut game_data.players {
+                if player.tag.eq(&x[1]) {
+                    player.igns.push(x[0].clone());                   
+                }
+            }
+        }
+    }
+}
+
+fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
+    let mut iter = buffer.iter().enumerate();
+
+    for iter in buffer {
+        for player in &game_data.players {
+            let id_start = iter.find('"').unwrap_or(0);
+            let tag = line[(id_start)..(line.len())].to_string();
+
+            if tag.eq(&player.tag) {
+                    player.score = buffer[line.pos]
+            }
         }
     }
 }
@@ -69,6 +91,9 @@ fn main() {
     
     let mut reading_player_countries = false;
     let mut player_countries_buf: Vec<String> = Vec::new();
+
+    let mut reading_player_scores = false;
+    let mut player_scores_buf: Vec<String> = Vec::new();
 
     for line in lines {
         if let Ok(ip) = line {
@@ -90,12 +115,22 @@ fn main() {
 
             if ip.contains("players_countries") {
                 reading_player_countries = true;
-            }               
-        }
-    }
+            }
 
-    for x in &game_data.players {
-        println!("{}", x.tag);
+            if reading_player_scores {
+                if ip.contains("}") && (ip.chars().count() == 1) {
+                    reading_player_scores = false;
+                    insert_score_data(&player_scores_buf, &mut game_data);
+                    continue;
+                }
+
+                player_scores_buf.push(ip.clone());
+            }
+
+            if ip.contains("score_statistics") {
+                reading_player_scores = true;
+            }
+        }
     }
 }
 
@@ -104,4 +139,3 @@ where P: AsRef<Path> {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
-
