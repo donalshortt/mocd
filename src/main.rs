@@ -34,8 +34,8 @@ impl Default for Game {
 
 fn player_exists(tag: &String, game_data: &Game) -> bool {
     for player in &game_data.players {
-        if tag.to_string() == player.tag { 
-            true;
+        if player.tag.eq(tag) {
+            return true;
         }
     }
 
@@ -43,16 +43,17 @@ fn player_exists(tag: &String, game_data: &Game) -> bool {
 }
 
 fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
-    let chunked_buf = buffer.chunks(2);
+    // strips the whitespace from the raw input lines and groups each line in tags and igns
+    // TODO: figure out why this can't be a oneliner in it's current form
+    let stripped_buf = buffer.into_iter().map(|x| x.trim().to_string()).collect::<Vec<String>>();
+    let chunked_buf = stripped_buf.chunks(2);
 
     for x in chunked_buf {
-        println!("{} -- {}", x[0], x[1]);
-
         if !player_exists(&x[1], &game_data) {
             game_data.players.push(
                 Player { 
                     igns: vec![x[0].clone()], 
-                    tag: x[1].clone(), 
+                    tag: x[1].clone().to_string(), 
                     score: 0 
                 }
             );
@@ -92,8 +93,6 @@ fn main() {
             }               
         }
     }
-
-    println!("Yo");
 
     for x in &game_data.players {
         println!("{}", x.tag);
