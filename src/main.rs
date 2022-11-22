@@ -12,9 +12,9 @@ struct Player {
 impl Default for Player {
     fn default () -> Player {
         Player {
-            igns : Vec::new(),
-            tag : String::new(),
-            score : 0,
+            igns: Vec::new(),
+            tag: String::new(),
+            score: 0,
         }
     }
 }
@@ -27,8 +27,8 @@ struct Game {
 impl Default for Game {
     fn default () -> Game {
         Game {
-            id : String::new(),
-            players : Vec::new(),
+            id: String::new(),
+            players: Vec::new(),
         }
     }
 }
@@ -46,7 +46,7 @@ fn player_exists(tag: &String, game_data: &Game) -> bool {
 fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
     // strips the whitespace from the raw input lines and groups each line in tags and igns
     // TODO: figure out why this can't be a oneliner in it's current form
-    let stripped_buf = buffer.into_iter().map(|x| x.trim().to_string()).collect::<Vec<String>>();
+    let stripped_buf: Vec<String> = buffer.into_iter().map(|x| x.trim().to_string()).collect();
     let chunked_buf = stripped_buf.chunks(2);
 
     for x in chunked_buf {
@@ -69,18 +69,25 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
 }
 
 fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
-    let mut iter = buffer.iter().enumerate();
+    let mut iter = buffer.iter();
 
-    for iter in buffer {
-        for player in &game_data.players {
+    loop {
+/*        for player in &game_data.players {
             let id_start = iter.find('"').unwrap_or(0);
             let tag = line[(id_start)..(line.len())].to_string();
 
             if tag.eq(&player.tag) {
-                    player.score = buffer[line.pos]
+                player.score = buffer[line.pos]
+            }
+        }*/
+        
+        for player in &game_data.players {
+            if iter == Some(player.tag) {
+
             }
         }
-    }
+
+    } 
 }
 
 fn main() {
