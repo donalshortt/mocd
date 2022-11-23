@@ -72,22 +72,14 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
     let mut iter = buffer.iter();
 
     loop {
-/*        for player in &game_data.players {
-            let id_start = iter.find('"').unwrap_or(0);
-            let tag = line[(id_start)..(line.len())].to_string();
-
-            if tag.eq(&player.tag) {
-                player.score = buffer[line.pos]
-            }
-        }*/
-        
         for player in &game_data.players {
-            if iter == Some(player.tag) {
+            if iter  {
 
             }
         }
 
-    } 
+        iter.next();
+    }
 }
 
 fn main() {
