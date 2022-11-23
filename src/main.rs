@@ -69,17 +69,16 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
 }
 
 fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
-    let mut iter = buffer.iter().enumerate();
+    let mut iter = buffer.iter();
 
-    for iter in buffer {
+    loop {
         for player in &game_data.players {
-            let id_start = iter.find('"').unwrap_or(0);
-            let tag = line[(id_start)..(line.len())].to_string();
+            if iter  {
 
-            if tag.eq(&player.tag) {
-                    player.score = buffer[line.pos]
             }
         }
+
+        iter.next();
     }
 }
 
