@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{self, BufRead};
-use std::iter::Enumerate;
 use std::path::Path;
 
 struct Player {
@@ -20,6 +19,7 @@ impl Default for Player {
 }
 
 struct Game {
+    date: String,
     id: String,
     players: Vec<Player>,
 }
@@ -27,6 +27,7 @@ struct Game {
 impl Default for Game {
     fn default () -> Game {
         Game {
+            date: String::new(),
             id: String::new(),
             players: Vec::new(),
         }
@@ -71,14 +72,30 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
 fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
     let mut iter = buffer.iter();
 
-    loop {
-        for player in &game_data.players {
-            if iter  {
+    while let Some(line) = iter.next() {
+        if line.contains("name") {
+            for player in &mut game_data.players {
+                if line.contains(&player.tag) {
+                    iter.next();
 
+                    let score_sheet = if let Some(score_sheet) = iter.next() { 
+                        score_sheet
+                    } else { 
+                        panic!("Score sheet not available") 
+                    };
+
+                    let mut scores_split = score_sheet.split(" ");
+                    let score_and_date = scores_split.nth(scores_split.clone().count() - 2).unwrap();
+
+                    let sd_split_point = score_and_date.find("=").unwrap();
+                    let score = &score_and_date[(sd_split_point + 1)..score_and_date.len()].parse::<u32>().unwrap();
+
+                    player.score = score.clone();
+
+                    println!("waow");
+                }
             }
         }
-
-        iter.next();
     }
 }
 
@@ -96,6 +113,11 @@ fn main() {
 
     for line in lines {
         if let Ok(ip) = line {
+
+            if ip.contains("date") && game_data.date.is_empty() {
+                let date_start = ip.find('=').unwrap_or(0);
+                game_data.date = ip[(date_start + 1)..(ip.len())].to_string();
+            }
 
             if ip.contains("campaign_id") {
                 let id_start = ip.find('"').unwrap_or(0);                   
@@ -131,6 +153,8 @@ fn main() {
             }
         }
     }
+
+    println!("waow");
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
