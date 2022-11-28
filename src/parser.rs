@@ -23,7 +23,7 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
             game_data.players.push(
                 mocb::Player { 
                     igns: vec![chunk[0][1..chunk[0].len() - 1].to_string()], 
-                    tag: chunk[1][1..chunk[1].len() - 1].to_string(), 
+                    tag: chunk[1].to_string(), 
                     score: 0 
                 }
             );
