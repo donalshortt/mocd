@@ -18,19 +18,19 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
     let stripped_buf: Vec<String> = buffer.into_iter().map(|x| x.trim().to_string()).collect();
     let chunked_buf = stripped_buf.chunks(2);
 
-    for x in chunked_buf {
-        if !player_exists(&x[1], &game_data) {
+    for chunk in chunked_buf {
+        if !player_exists(&chunk[1], &game_data) {
             game_data.players.push(
                 mocb::Player { 
-                    igns: vec![x[0].clone()], 
-                    tag: x[1].clone().to_string(), 
+                    igns: vec![chunk[0][1..chunk[0].len() - 1].to_string()], 
+                    tag: chunk[1][1..chunk[1].len() - 1].to_string(), 
                     score: 0 
                 }
             );
         } else {
             for player in &mut game_data.players {
-                if player.tag.eq(&x[1]) {
-                    player.igns.push(x[0].clone());                   
+                if player.tag.eq(&chunk[1]) {
+                    player.igns.push(chunk[0][1..chunk[0].len() - 1].to_string());                   
                 }
             }
         }
