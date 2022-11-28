@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-fn player_exists(tag: &String, game_data: &Game) -> bool {
+fn player_exists(tag: &String, game_data: &mocb::Game) -> bool {
     for player in &game_data.players {
         if player.tag.eq(tag) {
             return true;
@@ -12,7 +12,7 @@ fn player_exists(tag: &String, game_data: &Game) -> bool {
     false
 }
 
-fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
+fn insert_country_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
     // strips the whitespace from the raw input lines and groups each line in tags and igns
     // TODO: figure out why this can't be a oneliner in it's current form
     let stripped_buf: Vec<String> = buffer.into_iter().map(|x| x.trim().to_string()).collect();
@@ -21,7 +21,7 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
     for x in chunked_buf {
         if !player_exists(&x[1], &game_data) {
             game_data.players.push(
-                Player { 
+                mocb::Player { 
                     igns: vec![x[0].clone()], 
                     tag: x[1].clone().to_string(), 
                     score: 0 
@@ -37,7 +37,7 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut Game) {
     }
 }
 
-fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
+fn insert_score_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
     let mut iter = buffer.iter();
 
     while let Some(line) = iter.next() {
@@ -65,10 +65,8 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
     }
 }
 
-pub fn parse(game_data: &Game) {
+pub fn parse(game_data: &mut mocb::Game) {
     let filepath = "/home/donal/projects/mocd/saves/mp_autosave.eu4";
-
-
     let lines = read_lines(filepath).expect("lines extracted from file");
     
     let mut reading_player_countries = false;
@@ -93,7 +91,7 @@ pub fn parse(game_data: &Game) {
             if reading_player_countries {
                 if ip.contains("}") && (ip.chars().count() == 1) {
                     reading_player_countries = false;
-                    insert_country_data(&player_countries_buf, &mut game_data);
+                    insert_country_data(&player_countries_buf, game_data);
                     continue;
                 }
 
@@ -107,7 +105,7 @@ pub fn parse(game_data: &Game) {
             if reading_player_scores {
                 if ip.contains("}") && (ip.chars().count() == 1) {
                     reading_player_scores = false;
-                    insert_score_data(&player_scores_buf, &mut game_data);
+                    insert_score_data(&player_scores_buf, game_data);
                     continue;
                 }
 
@@ -119,8 +117,6 @@ pub fn parse(game_data: &Game) {
             }
         }
     }
-
-    println!("waow");
 }
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
