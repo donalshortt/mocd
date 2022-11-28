@@ -8,7 +8,7 @@ fn main() {
     let mut game_data = mocb::Game::default();
 
     parser::parse(&mut game_data);
-    sender::send(game_data);
+    sender::send(&game_data);
 
     println!("waow");
 }

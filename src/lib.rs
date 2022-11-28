@@ -1,3 +1,5 @@
+use serde::ser::{Serialize, Serializer, SerializeStruct};
+
 pub struct Player {
     pub igns: Vec<String>,
     pub tag: String,
@@ -11,6 +13,19 @@ impl Default for Player {
             tag: String::new(),
             score: 0,
         }
+    }
+}
+
+impl Serialize for Player {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer, 
+    {
+        let mut state = serializer.serialize_struct("player", 3)?;
+        state.serialize_field("igns", &self.igns)?;
+        state.serialize_field("tag", &self.tag[1..&self.tag.len() - 1])?;
+        state.serialize_field("score", &self.score)?;
+        state.end()
     }
 }
 
