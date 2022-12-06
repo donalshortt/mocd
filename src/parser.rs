@@ -4,9 +4,7 @@ use std::path::Path;
 
 fn player_exists(tag: &String, game_data: &mocb::Game) -> bool {
     for player in &game_data.players {
-        if player.tag.eq(tag) {
-            return true;
-        }
+        if player.tag.eq(tag) { return true; }
     }
 
     false
@@ -41,27 +39,28 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
     let mut iter = buffer.iter();
 
     while let Some(line) = iter.next() {
-        if line.contains("name") {
-            for player in &mut game_data.players {
-                if line.contains(&player.tag) {
-                    iter.next();
+        if !line.contains("name") { continue; };
+		
+		for player in &mut game_data.players {
+			if !line.contains(&player.tag) { continue; };
 
-                    let score_sheet = if let Some(score_sheet) = iter.next() { 
-                        score_sheet
-                    } else { 
-                        panic!("Score sheet not available") 
-                    };
+			// required because next line is blank
+			iter.next();
 
-                    let mut scores_split = score_sheet.split(" ");
-                    let score_and_date = scores_split.nth(scores_split.clone().count() - 2).unwrap();
+			let score_sheet = if let Some(score_sheet) = iter.next() { 
+				score_sheet
+			} else { 
+				panic!("Score sheet not available") 
+			};
 
-                    let sd_split_point = score_and_date.find("=").unwrap();
-                    let score = &score_and_date[(sd_split_point + 1)..score_and_date.len()].parse::<u32>().unwrap();
+			let mut scores_split = score_sheet.split(" ");
+			let score_and_date = scores_split.nth(scores_split.clone().count() - 2).unwrap();
 
-                    player.score = score.clone();
-                }
-            }
-        }
+			let sd_split_point = score_and_date.find("=").unwrap();
+			let score = &score_and_date[(sd_split_point + 1)..score_and_date.len()].parse::<u32>().unwrap();
+
+			player.score = score.clone();
+		}
     }
 }
 
