@@ -16,7 +16,7 @@ pub fn send(game_data: &mocb::Game) {
     let json = to_json(&game_data);
 
     let client = reqwest::blocking::Client::new();
-    let res = client.post("https://4813212d-6429-430e-8f38-6a37061b64c7.mock.pstmn.io/hellothere/")
+    let res = client.post("http://127.0.0.1:3080/api/game_data")
         .header(CONTENT_TYPE, "application/json")
         .json(&json)
         .send();                                
