@@ -65,7 +65,7 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
 }
 
 pub fn parse(game_data: &mut mocb::Game) {
-    let filepath = "/home/donal/projects/mocd/saves/mp_autosave.eu4";
+    let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
     let lines = read_lines(filepath).expect("lines extracted from file");
     
     let mut reading_player_countries = false;
