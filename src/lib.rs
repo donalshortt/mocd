@@ -31,6 +31,7 @@ impl Serialize for Player {
 
 pub struct Game {
     pub date: String,
+    pub name: String,
     pub id: String,
     pub players: Vec<Player>,
 }
@@ -39,6 +40,7 @@ impl Default for Game {
     fn default () -> Game {
         Game {
             date: String::new(),
+            name: String::new(),
             id: String::new(),
             players: Vec::new(),
         }

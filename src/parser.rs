@@ -82,6 +82,11 @@ pub fn parse(game_data: &mut mocb::Game) {
                 game_data.date = ip[(date_start + 1)..(ip.len())].to_string();
             }
 
+            if ip.contains("save_game") {
+                let name_start = ip.find('"').unwrap_or(0);
+                game_data.name = ip[(name_start + 1)..(ip.len() - 5)].to_string();
+            }
+
             if ip.contains("campaign_id") {
                 let id_start = ip.find('"').unwrap_or(0);                   
                 game_data.id = ip[(id_start + 1)..(ip.len() - 1)].to_string();

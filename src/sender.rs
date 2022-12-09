@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 fn to_json(game_data: &mocb::Game) -> Value {
     let json = json!({
         "date": game_data.date,
+        "name": game_data.name,
         "id": game_data.id,
         "players": game_data.players
     });
