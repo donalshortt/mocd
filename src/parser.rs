@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-fn player_exists(tag: &String, game_data: &mocb::Game) -> bool {
+fn player_exists(tag: &String, game_data: &mocp_lib::Game) -> bool {
     for player in &game_data.players {
         if player.tag.eq(tag) { return true; }
     }
@@ -10,7 +10,7 @@ fn player_exists(tag: &String, game_data: &mocb::Game) -> bool {
     false
 }
 
-fn insert_country_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
+fn insert_country_data(buffer: &Vec<String>, game_data: &mut mocp_lib::Game) {
     // strips the whitespace from the raw input lines and groups each line in tags and igns
     // TODO: figure out why this can't be a oneliner in it's current form
     let stripped_buf: Vec<String> = buffer.into_iter().map(|x| x.trim().to_string()).collect();
@@ -19,7 +19,7 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
     for chunk in chunked_buf {
         if !player_exists(&chunk[1], &game_data) {
             game_data.players.push(
-                mocb::Player { 
+                mocp_lib::Player { 
                     igns: vec![chunk[0][1..chunk[0].len() - 1].to_string()], 
                     tag: chunk[1].to_string(), 
                     score: 0 
@@ -35,7 +35,7 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
     }
 }
 
-fn insert_score_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
+fn insert_score_data(buffer: &Vec<String>, game_data: &mut mocp_lib::Game) {
     let mut iter = buffer.iter();
 
     while let Some(line) = iter.next() {
@@ -64,7 +64,7 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut mocb::Game) {
     }
 }
 
-pub fn parse(filepath: &str, game_data: &mut mocb::Game) {
+pub fn parse(filepath: &str, game_data: &mut mocp_lib::Game) {
     let lines = read_lines(filepath).expect("lines extracted from file");
     
     let mut reading_player_countries = false;
