@@ -17,7 +17,7 @@ pub fn send(game_data: &mocp_lib::Game) {
     let json = to_json(&game_data);
 
     let client = reqwest::blocking::Client::new();
-    let res = client.post("http://127.0.0.1:3080/api/game_data")
+    let _res = client.post("http://127.0.0.1:3080/api/game_data")
         .header(CONTENT_TYPE, "application/json")
         .json(&json)
         .send();                                
