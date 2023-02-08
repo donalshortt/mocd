@@ -42,8 +42,8 @@ fn main() {
         let latest_datetime: DateTime<Utc> = latest_metadata.into();
         let latest_time = latest_datetime.format("%T").to_string();
 
-        println!("Latest time: {}", latest_time);
-        //println!("Last datetime: {}", last_time);
+        println!("Latest time from metadata: {}", latest_time);
+        println!("Last time from file: {}", last_time);
         if latest_time != last_time {
             // write to file instead of this variable
             last_time = latest_time.clone();

@@ -53,8 +53,13 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut mocp_lib::Game) {
 				panic!("Score sheet not available") 
 			};
 
+            if score_sheet.contains("{") {
+                player.score = 0;
+                continue;
+            }
+
 			let mut scores_split = score_sheet.split(" ");
-			let score_and_date = scores_split.nth(scores_split.clone().count() - 2).unwrap();
+            let score_and_date = scores_split.nth(scores_split.clone().count() - 2).unwrap();
 
 			let sd_split_point = score_and_date.find("=").unwrap();
 			let score = &score_and_date[(sd_split_point + 1)..score_and_date.len()].parse::<u32>().unwrap();
@@ -78,7 +83,8 @@ pub fn parse(filepath: &str, game_data: &mut mocp_lib::Game) {
 
             if ip.contains("date") && game_data.date.is_empty() {
                 let date_start = ip.find('=').unwrap_or(0);
-                game_data.date = ip[(date_start + 1)..(ip.len())].to_string();
+                let date_end = ip.find('.').unwrap_or(0);
+                game_data.date = ip[(date_start + 1)..date_end].to_string();
             }
 
             if ip.contains("save_game") {
