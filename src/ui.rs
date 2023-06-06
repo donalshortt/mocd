@@ -1,4 +1,4 @@
-use std::{io, thread, time::Duration};
+use std::io;
 use tui::{
     backend::CrosstermBackend,
     widgets::{Widget, Block, Borders},
@@ -6,13 +6,20 @@ use tui::{
     Terminal
 };
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::EnableMouseCapture,
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{enable_raw_mode, EnterAlternateScreen},
 };
 
-pub fn update_dashboard() {
-
+pub fn update_dashboard(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) {
+    terminal.draw(|f| {
+        let size = f.size();
+        let block = Block::default()
+            .title("My cool block")
+            .
+            .borders(Borders::ALL);
+        f.render_widget(block, size);
+    }).unwrap();
 }
 
 pub fn ui_setup() -> Result<Terminal<CrosstermBackend<io::Stdout>>, io::Error> {

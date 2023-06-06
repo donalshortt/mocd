@@ -6,7 +6,6 @@ extern crate chrono;
 
 use chrono::offset::Utc;
 use chrono::DateTime;
-use std::env;
 use std::fs;
 use std::fs::*;
 use std::io::Read;
@@ -14,7 +13,11 @@ use std::path::Path;
 use std::{thread, time};
 
 fn main() {
-    let mut ui = ui::ui_setup();
+    let ui = ui::ui_setup().unwrap();
+
+    ui::update_dashboard(ui);
+
+    loop {}
 
 	let mut game_data = mocp_lib::Game::default();
 	let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
@@ -30,7 +33,7 @@ fn main() {
 		.expect("Unable to open file to read time of last metadata access");
 	file.read_to_string(&mut last_time).unwrap();
 
-	loop {
+	/*loop {
 		let latest_metadata = fs::metadata(filepath)
 			.expect("Couldn't get metadata from savefile")
 			.modified()
@@ -56,5 +59,5 @@ fn main() {
 			println!("Sleeping....");
 			thread::sleep(time::Duration::new(5, 0));
 		}
-	}
+	}*/
 }
