@@ -15,7 +15,8 @@ use std::{thread, time};
 fn main() {
     let ui = ui::ui_setup().unwrap();
 
-    ui::update_dashboard(ui);
+    //ui::update_dashboard(ui);
+    ui::display_menu(ui).unwrap();
 
     loop {}
 

@@ -1,9 +1,9 @@
 use std::io;
 use tui::{
     backend::CrosstermBackend,
-    widgets::{Widget, Block, Borders},
+    widgets::{Widget, Block, Borders, List, ListItem},
     layout::{Layout, Constraint, Direction},
-    Terminal
+    Terminal, style::{Style, Color, Modifier}
 };
 use crossterm::{
     event::EnableMouseCapture,
@@ -11,20 +11,36 @@ use crossterm::{
     terminal::{enable_raw_mode, EnterAlternateScreen},
 };
 
-pub fn update_dashboard(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) {
+pub fn display_menu(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+
+    let menu_options = [ListItem::new("test"), ListItem::new("bigtest"), ListItem::new("quit")];
+
+    let list = List::new(menu_options)
+        .block(Block::default().title("List").borders(Borders::ALL))
+        .style(Style::default().fg(Color::White))
+        .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+        .highlight_symbol(">>");
+
+    terminal.draw(|f| {
+        let size = f.size();
+        f.render_widget(list, size);
+    })?;
+
+    Ok(())
+}
+
+pub fn update_dashboard(mut terminal: Terminal<CrosstermBackend<io::Stdout>>, update: &str) {
     terminal.draw(|f| {
         let size = f.size();
         let block = Block::default()
             .title("My cool block")
-            .
             .borders(Borders::ALL);
         f.render_widget(block, size);
     }).unwrap();
 }
 
 pub fn ui_setup() -> Result<Terminal<CrosstermBackend<io::Stdout>>, io::Error> {
-    enable_raw_mode()
-        .expect("enable_raw_mode() failed");
+    enable_raw_mode()?;
     let mut stdout = io::stdout();
 
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
