@@ -3,13 +3,47 @@ use tui::{
     backend::CrosstermBackend,
     widgets::{Widget, Block, Borders, List, ListItem},
     layout::{Layout, Constraint, Direction},
-    Terminal, style::{Style, Color, Modifier}
+    Terminal, 
+    style::{Style, Color, Modifier}
 };
 use crossterm::{
     event::EnableMouseCapture,
     execute,
     terminal::{enable_raw_mode, EnterAlternateScreen},
 };
+
+pub fn run_ui() -> Result<(), io::Error> {
+    terminal.draw(|f| ui(f, &app))?;
+
+    if let Event::Key(key) = event::read()? {
+        match app.input_mode {
+            InputMode::Normal => match key.code {
+                KeyCode::Char('e') => {
+                    app.input_mode = InputMode::Editing;
+                }
+                KeyCode::Char('q') => {
+                    return Ok(());
+                }
+                _ => {}
+            },
+            InputMode::Editing => match key.code {
+                KeyCode::Enter => {
+                    app.messages.push(app.input.drain(..).collect());
+                }
+                KeyCode::Char(c) => {
+                    app.input.push(c);
+                }
+                KeyCode::Backspace => {
+                    app.input.pop();
+                }
+                KeyCode::Esc => {
+                    app.input_mode = InputMode::Normal;
+                }
+                _ => {}
+            },
+        }
+    }
+}
 
 pub fn display_menu(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 

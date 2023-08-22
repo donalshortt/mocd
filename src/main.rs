@@ -4,6 +4,7 @@ mod ui;
 
 extern crate chrono;
 
+use std::io;
 use chrono::offset::Utc;
 use chrono::DateTime;
 use std::fs;
@@ -12,11 +13,41 @@ use std::io::Read;
 use std::path::Path;
 use std::{thread, time};
 
+use tui::{
+    Terminal,
+    backend::CrosstermBackend
+};
+
+enum AppState {
+    GameSelect,
+    Dashboard
+}
+
+struct App {
+    app_state: AppState,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        App {
+            app_state: AppState::GameSelect,
+        }
+    }
+}
+
+fn run_app(ui: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+    loop {
+        ui::run_ui(ui);
+    }
+}
+
 fn main() {
     let ui = ui::ui_setup().unwrap();
 
     //ui::update_dashboard(ui);
     ui::display_menu(ui).unwrap();
+
+    run_app(ui);
 
     loop {}
 
