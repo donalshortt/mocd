@@ -12,10 +12,12 @@ use crossterm::{
     terminal::{enable_raw_mode, EnterAlternateScreen},
 };
 
-pub fn run_ui() -> Result<(), io::Error> {
+pub fn run_ui(terminal: Terminal<CrosstermBackend<io::Stdout>>, app: App) -> Result<(), io::Error> {
     terminal.draw(|f| ui(f, &app))?;
 
-    if let Event::Key(key) = event::read()? {
+    
+
+    /*if let Event::Key(key) = event::read()? {
         match app.input_mode {
             InputMode::Normal => match key.code {
                 KeyCode::Char('e') => {
@@ -42,10 +44,10 @@ pub fn run_ui() -> Result<(), io::Error> {
                 _ => {}
             },
         }
-    }
+    }*/
 }
 
-pub fn display_menu(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+pub fn gameselect(mut terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 
     let menu_options = [ListItem::new("test"), ListItem::new("bigtest"), ListItem::new("quit")];
 

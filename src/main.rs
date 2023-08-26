@@ -35,19 +35,48 @@ impl Default for App {
     }
 }
 
-fn run_app(ui: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+fn run_app(terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+    let app = App::default();
+
     loop {
-        ui::run_ui(ui);
+        ui::run_ui(terminal, app);
+
+		/*let latest_metadata = fs::metadata(filepath)
+			.expect("Couldn't get metadata from savefile")
+			.modified()
+			.expect("Couldn't get time modified from metadata");
+		let latest_datetime: DateTime<Utc> = latest_metadata.into();
+		let latest_time = latest_datetime.format("%T").to_string();
+
+		println!("Latest time from metadata: {}", latest_time);
+		println!("Last time from file: {}", last_time);
+		if latest_time != last_time {
+			// write to file instead of this variable
+			last_time = latest_time.clone();
+			fs::write("last_metadata.txt", last_time.clone())
+				.expect("Unable to write time last modified to file");
+
+			fs::write("last_metadata.txt", latest_time).expect("Unable to write time to file!");
+
+			parser::parse(filepath, &mut game_data);
+			sender::send(&game_data);
+
+			println!("Sent!");
+		} else {
+			println!("Sleeping....");
+			thread::sleep(time::Duration::new(5, 0));
+		}*/
     }
 }
 
 fn main() {
-    let ui = ui::ui_setup().unwrap();
+    let terminal = ui::ui_setup().unwrap();
 
     //ui::update_dashboard(ui);
-    ui::display_menu(ui).unwrap();
+    ui::gameselect(terminal).unwrap();
 
-    run_app(ui);
+
+    run_app(terminal);
 
     loop {}
 
