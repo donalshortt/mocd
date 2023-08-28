@@ -7,6 +7,7 @@ extern crate chrono;
 use std::io;
 use chrono::offset::Utc;
 use chrono::DateTime;
+use tui::widgets::{ListItem, ListState};
 use std::fs;
 use std::fs::*;
 use std::io::Read;
@@ -18,28 +19,84 @@ use tui::{
     backend::CrosstermBackend
 };
 
-enum AppState {
-    GameSelect,
-    Dashboard
+struct StatefulList<'a> {
+    state: ListState,
+    items: Vec<ListItem<'a>>,
 }
 
-struct App {
-    app_state: AppState,
-}
-
-impl Default for App {
+impl Default for StatefulList<'_> {
     fn default() -> Self {
-        App {
-            app_state: AppState::GameSelect,
+        StatefulList {
+            state: ListState::default(),
+            //TODO: create a function to get the list items from a datafile
+            items: vec![ListItem::new("test"), ListItem::new("bigtest"), ListItem::new("quit")],
         }
     }
 }
 
-fn run_app(terminal: Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+enum AppState {
+    GameSelect,
+    Dashboard,
+}
+
+pub struct App<'a> {
+    app_state: AppState,
+    games: StatefulList<'a>,
+}
+
+impl Default for App<'_> {
+    fn default() -> Self {
+        App {
+            app_state: AppState::GameSelect,
+            games: StatefulList::default(),
+        }
+    }
+}
+
+fn run_app(terminal: &Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
     let app = App::default();
 
     loop {
-        ui::run_ui(terminal, app);
+        match app.app_state {
+            AppState::GameSelect => {
+                ui::gameselect(terminal, app);
+            }
+
+            AppState::Dashboard => {
+                // ui::dashboard();
+                println!("dashboard");
+            }
+        }
+
+
+    /*if let Event::Key(key) = event::read()? {
+        match app.input_mode {
+            InputMode::Normal => match key.code {
+                KeyCode::Char('e') => {
+                    app.input_mode = InputMode::Editing;
+                }
+                KeyCode::Char('q') => {
+                    return Ok(());
+                }
+                _ => {}
+            },
+            InputMode::Editing => match key.code {
+                KeyCode::Enter => {
+                    app.messages.push(app.input.drain(..).collect());
+                }
+                KeyCode::Char(c) => {
+                    app.input.push(c);
+                }
+                KeyCode::Backspace => {
+                    app.input.pop();
+                }
+                KeyCode::Esc => {
+                    app.input_mode = InputMode::Normal;
+                }
+                _ => {}
+            },
+        }
+    }*/
 
 		/*let latest_metadata = fs::metadata(filepath)
 			.expect("Couldn't get metadata from savefile")
