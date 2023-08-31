@@ -53,13 +53,15 @@ impl Default for App<'_> {
     }
 }
 
-fn run_app(terminal: &Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
-    let app = App::default();
+// display my stateful list via a config for gameselect
+
+fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+    let mut app = App::default();
 
     loop {
         match app.app_state {
             AppState::GameSelect => {
-                ui::gameselect(terminal, app);
+                ui::gameselect(terminal, &mut app);
             }
 
             AppState::Dashboard => {
@@ -127,13 +129,12 @@ fn run_app(terminal: &Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::
 }
 
 fn main() {
-    let terminal = ui::ui_setup().unwrap();
+    let mut terminal = ui::ui_setup().unwrap();
 
     //ui::update_dashboard(ui);
-    ui::gameselect(terminal).unwrap();
 
 
-    run_app(terminal);
+    run_app(&mut terminal);
 
     loop {}
 

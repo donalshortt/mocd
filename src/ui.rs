@@ -1,8 +1,7 @@
 use std::io;
 use tui::{
     backend::CrosstermBackend,
-    widgets::{Widget, Block, Borders, List, ListItem, ListState},
-    layout::{Layout, Constraint, Direction},
+    widgets::{Block, Borders, List, ListItem},
     Terminal, 
     style::{Style, Color, Modifier}
 };
@@ -12,7 +11,9 @@ use crossterm::{
     terminal::{enable_raw_mode, EnterAlternateScreen},
 };
 
-pub fn gameselect(mut terminal: &Terminal<CrosstermBackend<io::Stdout>>, app: App) -> Result<(), io::Error> {
+use crate::App;
+
+pub fn gameselect(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &mut App) -> Result<(), io::Error> {
 
     let menu_options = [ListItem::new("test"), ListItem::new("bigtest"), ListItem::new("quit")];
 
@@ -24,7 +25,7 @@ pub fn gameselect(mut terminal: &Terminal<CrosstermBackend<io::Stdout>>, app: Ap
 
     terminal.draw(|f| {
         let size = f.size();
-        f.render_stateful_widget(list, size);
+        f.render_stateful_widget(list, size, &mut app.games.state);
     })?;
 
     Ok(())
