@@ -1,3 +1,5 @@
+use crate::App;
+
 use crossterm::{
 	event::EnableMouseCapture,
 	execute,
@@ -13,8 +15,8 @@ use tui::{
 };
 
 pub fn gameselect(
-	mut terminal: &Terminal<CrosstermBackend<io::Stdout>>,
-	app: App,
+	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+	app: &mut App,
 ) -> Result<(), io::Error> {
 	let menu_options = [
 		ListItem::new("test"),
@@ -30,15 +32,10 @@ pub fn gameselect(
 
 	terminal.draw(|f| {
 		let size = f.size();
-		f.render_stateful_widget(list, size);
+		f.render_stateful_widget(list, size, &mut app.games.state);
 	})?;
 
-    terminal.draw(|f| {
-        let size = f.size();
-        f.render_stateful_widget(list, size, &mut app.games.state);
-    })?;
-
-    Ok(())
+	Ok(())
 }
 
 pub fn update_dashboard(mut terminal: Terminal<CrosstermBackend<io::Stdout>>, update: &str) {

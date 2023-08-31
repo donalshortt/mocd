@@ -4,9 +4,9 @@ mod ui;
 
 extern crate chrono;
 
-use crossterm::event::{self, Event, KeyCode};
 use chrono::offset::Utc;
 use chrono::DateTime;
+use crossterm::event::{self, Event, KeyCode};
 use std::fs;
 use std::fs::*;
 use std::io;
@@ -90,13 +90,13 @@ impl Default for App<'_> {
 // display my stateful list via a config for gameselect
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
-    let mut app = App::default();
+	let mut app = App::default();
 
-    loop {
-        match app.app_state {
-            AppState::GameSelect => {
-                ui::gameselect(terminal, &mut app);
-            }
+	loop {
+		match app.app_state {
+			AppState::GameSelect => {
+				ui::gameselect(terminal, &mut app);
+			}
 
 			AppState::Dashboard => {
 				// ui::dashboard();
@@ -171,12 +171,10 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 }
 
 fn main() {
-	let terminal = ui::ui_setup().unwrap();
+	let mut terminal = ui::ui_setup().unwrap();
 
 	//ui::update_dashboard(ui);
-	ui::gameselect(terminal).unwrap();
-
-	run_app(terminal);
+	run_app(&mut terminal);
 
 	loop {}
 
