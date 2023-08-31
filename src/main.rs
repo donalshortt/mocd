@@ -4,99 +4,141 @@ mod ui;
 
 extern crate chrono;
 
-use std::io;
+use crossterm::event::{self, Event, KeyCode};
 use chrono::offset::Utc;
 use chrono::DateTime;
-use tui::widgets::{ListItem, ListState};
 use std::fs;
 use std::fs::*;
+use std::io;
 use std::io::Read;
 use std::path::Path;
 use std::{thread, time};
+use tui::widgets::{ListItem, ListState};
 
-use tui::{
-    Terminal,
-    backend::CrosstermBackend
-};
+use tui::{backend::CrosstermBackend, Terminal};
 
 struct StatefulList<'a> {
-    state: ListState,
-    items: Vec<ListItem<'a>>,
+	state: ListState,
+	items: Vec<ListItem<'a>>,
 }
 
+// add a way to detect keyboard strokes and go up and down a list with the selection
+
 impl Default for StatefulList<'_> {
-    fn default() -> Self {
-        StatefulList {
-            state: ListState::default(),
-            //TODO: create a function to get the list items from a datafile
-            items: vec![ListItem::new("test"), ListItem::new("bigtest"), ListItem::new("quit")],
-        }
-    }
+	fn default() -> Self {
+		StatefulList {
+			state: ListState::default(),
+			//TODO: create a function to get the list items from a datafile
+			items: vec![
+				ListItem::new("test"),
+				ListItem::new("bigtest"),
+				ListItem::new("quit"),
+			],
+		}
+	}
+}
+
+impl StatefulList<'_> {
+	fn next(&mut self) {
+		let i = match self.state.selected() {
+			Some(i) => {
+				if i >= self.items.len() - 1 {
+					0
+				} else {
+					i + 1
+				}
+			}
+			None => 0,
+		};
+		self.state.select(Some(i));
+	}
+
+	fn previous(&mut self) {
+		let i = match self.state.selected() {
+			Some(i) => {
+				if i == 0 {
+					self.items.len() - 1
+				} else {
+					i - 1
+				}
+			}
+			None => 0,
+		};
+		self.state.select(Some(i));
+	}
 }
 
 enum AppState {
-    GameSelect,
-    Dashboard,
+	GameSelect,
+	Dashboard,
 }
 
 pub struct App<'a> {
-    app_state: AppState,
-    games: StatefulList<'a>,
+	app_state: AppState,
+	games: StatefulList<'a>,
 }
 
 impl Default for App<'_> {
-    fn default() -> Self {
-        App {
-            app_state: AppState::GameSelect,
-            games: StatefulList::default(),
-        }
-    }
+	fn default() -> Self {
+		App {
+			app_state: AppState::GameSelect,
+			games: StatefulList::default(),
+		}
+	}
 }
 
 fn run_app(terminal: &Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
-    let app = App::default();
+	let mut app = App::default();
 
-    loop {
-        match app.app_state {
-            AppState::GameSelect => {
-                ui::gameselect(terminal, app);
-            }
+	loop {
+		match app.app_state {
+			AppState::GameSelect => {
+				ui::gameselect(terminal, app);
+			}
 
-            AppState::Dashboard => {
-                // ui::dashboard();
-                println!("dashboard");
-            }
-        }
+			AppState::Dashboard => {
+				// ui::dashboard();
+				println!("dashboard");
+			}
+		}
 
+		if let Event::Key(key) = event::read()? {
+			match key.code {
+				KeyCode::Char('q') => return Ok(()),
+				KeyCode::Down => app.games.next(),
+				KeyCode::Up => app.games.previous(),
+				_ => {}
+			}
+		}
 
-    /*if let Event::Key(key) = event::read()? {
-        match app.input_mode {
-            InputMode::Normal => match key.code {
-                KeyCode::Char('e') => {
-                    app.input_mode = InputMode::Editing;
-                }
-                KeyCode::Char('q') => {
-                    return Ok(());
-                }
-                _ => {}
-            },
-            InputMode::Editing => match key.code {
-                KeyCode::Enter => {
-                    app.messages.push(app.input.drain(..).collect());
-                }
-                KeyCode::Char(c) => {
-                    app.input.push(c);
-                }
-                KeyCode::Backspace => {
-                    app.input.pop();
-                }
-                KeyCode::Esc => {
-                    app.input_mode = InputMode::Normal;
-                }
-                _ => {}
-            },
-        }
-    }*/
+		/*if let Event::Key(key) = event::read()? {
+			match app.input_mode {
+				InputMode::Normal => match key.code {
+					KeyCode::Char('e') => {
+						app.input_mode = InputMode::Editing;
+					}
+					KeyCode::Char('q') => {
+						return Ok(());
+					}
+					_ => {}
+				},
+				InputMode::Editing => match key.code {
+					KeyCode::Enter => {
+						app.messages.push(app.input.drain(..).collect());
+					}
+					KeyCode::Char(c) => {
+						app.input.push(c);
+					}
+					KeyCode::Backspace => {
+						app.input.pop();
+					}
+					KeyCode::Esc => {
+						app.input_mode = InputMode::Normal;
+					}
+					_ => {}
+				},
+			}
+		}*/
 
 		/*let latest_metadata = fs::metadata(filepath)
 			.expect("Couldn't get metadata from savefile")
@@ -123,19 +165,18 @@ fn run_app(terminal: &Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::
 			println!("Sleeping....");
 			thread::sleep(time::Duration::new(5, 0));
 		}*/
-    }
+	}
 }
 
 fn main() {
-    let terminal = ui::ui_setup().unwrap();
+	let terminal = ui::ui_setup().unwrap();
 
-    //ui::update_dashboard(ui);
-    ui::gameselect(terminal).unwrap();
+	//ui::update_dashboard(ui);
+	ui::gameselect(terminal).unwrap();
 
+	run_app(terminal);
 
-    run_app(terminal);
-
-    loop {}
+	loop {}
 
 	let mut game_data = mocp_lib::Game::default();
 	let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";

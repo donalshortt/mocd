@@ -3,7 +3,7 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn test() {
-   println!("Hello, world!"); 
+	println!("Hello, world!");
 }
 
 fn player_exists(tag: &String, game_data: &mocp_lib::Game) -> bool {
