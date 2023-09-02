@@ -67,8 +67,7 @@ pub fn gameselect(
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 	app: &mut App,
 ) -> Result<(), io::Error> {
-
-    let list = List::new(&*app.games.items)
+	let list = List::new(&*app.games.items)
 		.block(Block::default().title("List").borders(Borders::ALL))
 		.style(Style::default().fg(Color::White))
 		.highlight_style(Style::default().add_modifier(Modifier::ITALIC))

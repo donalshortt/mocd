@@ -1,16 +1,16 @@
 mod parser;
 mod sender;
 mod ui;
+mod db;
 
 extern crate chrono;
 
+use crate::ui::StatefulList;
 use chrono::offset::Utc;
 use chrono::DateTime;
 use crossterm::event::{self, Event, KeyCode};
-use crate::ui::StatefulList;
-use serde::Serialize;
-use serde::Serializer;
 use serde::ser::SerializeStruct;
+use serde::{Serialize, Serializer};
 use std::fs;
 use std::fs::*;
 use std::io;
@@ -21,8 +21,9 @@ use std::{thread, time};
 use tui::{backend::CrosstermBackend, Terminal};
 
 enum AppState {
-	GameSelect,
 	Dashboard,
+	GameSelect,
+    NewGame,
 }
 
 pub struct App<'a> {
@@ -86,8 +87,8 @@ impl Serialize for Player {
 	}
 }
 
-// display my stateful list via a config for gameselect
-// decide where to put the logic for interacting with the "database"
+// decide where to put the logic for interacting with the json "database"
+// 
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 	let mut app = App::default();
@@ -95,22 +96,27 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 	loop {
 		match app.app_state {
 			AppState::GameSelect => {
-				ui::gameselect(terminal, &mut app);
+				ui::gameselect(terminal, &mut app)
+					.expect("unable to display game selection screen");
 
-                if let Event::Key(key) = event::read()? {
-                    match key.code {
-                        KeyCode::Char('q') => return Ok(()),
-                        KeyCode::Down => app.games.next(),
-                        KeyCode::Up => app.games.previous(),
-                        _ => {}
-                    }
-                }
+				if let Event::Key(key) = event::read()? {
+					match key.code {
+						KeyCode::Char('q') => return Ok(()),
+						KeyCode::Down => app.games.next(),
+						KeyCode::Up => app.games.previous(),
+						_ => {}
+					}
+				}
 			}
 
 			AppState::Dashboard => {
 				// ui::dashboard();
 				println!("dashboard");
 			}
+
+            AppState::NewGame => {
+                println!("newgame");
+            }
 		}
 
 		/*let latest_metadata = fs::metadata(filepath)
