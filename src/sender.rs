@@ -1,8 +1,9 @@
 use reqwest::header::CONTENT_TYPE;
-
 use serde_json::{json, Value};
 
-fn to_json(game_data: &mocp_lib::Game) -> Value {
+use crate::Game;
+
+fn to_json(game_data: &Game) -> Value {
 	let json = json!({
 		"date": game_data.date,
 		"name": game_data.name,
@@ -13,7 +14,7 @@ fn to_json(game_data: &mocp_lib::Game) -> Value {
 	json
 }
 
-pub fn send(game_data: &mocp_lib::Game) {
+pub fn send(game_data: &Game) {
 	let json = to_json(&game_data);
 
 	let client = reqwest::blocking::Client::new();

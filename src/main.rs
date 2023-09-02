@@ -7,66 +7,18 @@ extern crate chrono;
 use chrono::offset::Utc;
 use chrono::DateTime;
 use crossterm::event::{self, Event, KeyCode};
+use crate::ui::StatefulList;
+use serde::Serialize;
+use serde::Serializer;
+use serde::ser::SerializeStruct;
 use std::fs;
 use std::fs::*;
 use std::io;
 use std::io::Read;
 use std::path::Path;
 use std::{thread, time};
-use tui::widgets::{ListItem, ListState};
 
 use tui::{backend::CrosstermBackend, Terminal};
-
-struct StatefulList<'a> {
-	state: ListState,
-	items: Vec<ListItem<'a>>,
-}
-
-// add a way to detect keyboard strokes and go up and down a list with the selection
-
-impl Default for StatefulList<'_> {
-	fn default() -> Self {
-		StatefulList {
-			state: ListState::default(),
-			//TODO: create a function to get the list items from a datafile
-			items: vec![
-				ListItem::new("test"),
-				ListItem::new("bigtest"),
-				ListItem::new("quit"),
-			],
-		}
-	}
-}
-
-impl StatefulList<'_> {
-	fn next(&mut self) {
-		let i = match self.state.selected() {
-			Some(i) => {
-				if i >= self.items.len() - 1 {
-					0
-				} else {
-					i + 1
-				}
-			}
-			None => 0,
-		};
-		self.state.select(Some(i));
-	}
-
-	fn previous(&mut self) {
-		let i = match self.state.selected() {
-			Some(i) => {
-				if i == 0 {
-					self.items.len() - 1
-				} else {
-					i - 1
-				}
-			}
-			None => 0,
-		};
-		self.state.select(Some(i));
-	}
-}
 
 enum AppState {
 	GameSelect,
@@ -87,7 +39,55 @@ impl Default for App<'_> {
 	}
 }
 
+pub struct Game {
+	pub date: String,
+	pub name: String,
+	pub id: String,
+	pub players: Vec<Player>,
+}
+
+impl Default for Game {
+	fn default() -> Game {
+		Game {
+			date: String::new(),
+			name: String::new(),
+			id: String::new(),
+			players: Vec::new(),
+		}
+	}
+}
+
+pub struct Player {
+	pub igns: Vec<String>,
+	pub tag: String,
+	pub score: u32,
+}
+
+impl Default for Player {
+	fn default() -> Player {
+		Player {
+			igns: Vec::new(),
+			tag: String::new(),
+			score: 0,
+		}
+	}
+}
+
+impl Serialize for Player {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: Serializer,
+	{
+		let mut state = serializer.serialize_struct("player", 3)?;
+		state.serialize_field("igns", &self.igns)?;
+		state.serialize_field("tag", &self.tag[1..&self.tag.len() - 1])?;
+		state.serialize_field("score", &self.score)?;
+		state.end()
+	}
+}
+
 // display my stateful list via a config for gameselect
+// decide where to put the logic for interacting with the "database"
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 	let mut app = App::default();
@@ -96,6 +96,15 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 		match app.app_state {
 			AppState::GameSelect => {
 				ui::gameselect(terminal, &mut app);
+
+                if let Event::Key(key) = event::read()? {
+                    match key.code {
+                        KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Down => app.games.next(),
+                        KeyCode::Up => app.games.previous(),
+                        _ => {}
+                    }
+                }
 			}
 
 			AppState::Dashboard => {
@@ -103,44 +112,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 				println!("dashboard");
 			}
 		}
-
-		if let Event::Key(key) = event::read()? {
-			match key.code {
-				KeyCode::Char('q') => return Ok(()),
-				KeyCode::Down => app.games.next(),
-				KeyCode::Up => app.games.previous(),
-				_ => {}
-			}
-		}
-
-		/*if let Event::Key(key) = event::read()? {
-			match app.input_mode {
-				InputMode::Normal => match key.code {
-					KeyCode::Char('e') => {
-						app.input_mode = InputMode::Editing;
-					}
-					KeyCode::Char('q') => {
-						return Ok(());
-					}
-					_ => {}
-				},
-				InputMode::Editing => match key.code {
-					KeyCode::Enter => {
-						app.messages.push(app.input.drain(..).collect());
-					}
-					KeyCode::Char(c) => {
-						app.input.push(c);
-					}
-					KeyCode::Backspace => {
-						app.input.pop();
-					}
-					KeyCode::Esc => {
-						app.input_mode = InputMode::Normal;
-					}
-					_ => {}
-				},
-			}
-		}*/
 
 		/*let latest_metadata = fs::metadata(filepath)
 			.expect("Couldn't get metadata from savefile")
@@ -174,9 +145,9 @@ fn main() {
 	let mut terminal = ui::ui_setup().unwrap();
 
 	//ui::update_dashboard(ui);
-	run_app(&mut terminal);
+	run_app(&mut terminal).expect("app failed to start");
 
-	loop {}
+	/*
 
 	let mut game_data = mocp_lib::Game::default();
 	let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
@@ -192,7 +163,7 @@ fn main() {
 		.expect("Unable to open file to read time of last metadata access");
 	file.read_to_string(&mut last_time).unwrap();
 
-	/*loop {
+	loop {
 		let latest_metadata = fs::metadata(filepath)
 			.expect("Couldn't get metadata from savefile")
 			.modified()

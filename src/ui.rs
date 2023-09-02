@@ -14,17 +14,61 @@ use tui::{
 	Terminal,
 };
 
+pub struct StatefulList<'a> {
+	pub state: ListState,
+	pub items: Vec<ListItem<'a>>,
+}
+
+impl Default for StatefulList<'_> {
+	fn default() -> Self {
+		StatefulList {
+			state: ListState::default(),
+			//TODO: create a function to get the list items from a datafile
+			items: vec![
+				ListItem::new("test"),
+				ListItem::new("bigtest"),
+				ListItem::new("quit"),
+			],
+		}
+	}
+}
+
+impl StatefulList<'_> {
+	pub fn next(&mut self) {
+		let i = match self.state.selected() {
+			Some(i) => {
+				if i >= self.items.len() - 1 {
+					0
+				} else {
+					i + 1
+				}
+			}
+			None => 0,
+		};
+		self.state.select(Some(i));
+	}
+
+	pub fn previous(&mut self) {
+		let i = match self.state.selected() {
+			Some(i) => {
+				if i == 0 {
+					self.items.len() - 1
+				} else {
+					i - 1
+				}
+			}
+			None => 0,
+		};
+		self.state.select(Some(i));
+	}
+}
+
 pub fn gameselect(
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 	app: &mut App,
 ) -> Result<(), io::Error> {
-	let menu_options = [
-		ListItem::new("test"),
-		ListItem::new("bigtest"),
-		ListItem::new("quit"),
-	];
 
-	let list = List::new(menu_options)
+    let list = List::new(&*app.games.items)
 		.block(Block::default().title("List").borders(Borders::ALL))
 		.style(Style::default().fg(Color::White))
 		.highlight_style(Style::default().add_modifier(Modifier::ITALIC))
@@ -36,18 +80,6 @@ pub fn gameselect(
 	})?;
 
 	Ok(())
-}
-
-pub fn update_dashboard(mut terminal: Terminal<CrosstermBackend<io::Stdout>>, update: &str) {
-	terminal
-		.draw(|f| {
-			let size = f.size();
-			let block = Block::default()
-				.title("My cool block")
-				.borders(Borders::ALL);
-			f.render_widget(block, size);
-		})
-		.unwrap();
 }
 
 pub fn ui_setup() -> Result<Terminal<CrosstermBackend<io::Stdout>>, io::Error> {
