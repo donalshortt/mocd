@@ -63,6 +63,11 @@ impl StatefulList<'_> {
 	}
 }
 
+pub struct GameListing {
+    name: String,
+    date_created: String,
+}
+
 pub fn gameselect(
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
 	app: &mut App,

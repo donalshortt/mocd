@@ -88,11 +88,15 @@ impl Serialize for Player {
 }
 
 // decide where to put the logic for interacting with the json "database"
-// 
+// write logic for displaying the list of games available
+// -> check if db exists
+// -> read the games from the db
+// -> write a game to db
+// -> delete a game from the db
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
-	let mut app = App::default();
-
+    let mut app = App::default();
+ 
 	loop {
 		match app.app_state {
 			AppState::GameSelect => {
