@@ -10,7 +10,7 @@ use chrono::offset::Utc;
 use chrono::DateTime;
 use crossterm::event::{self, Event, KeyCode};
 use serde::ser::SerializeStruct;
-use serde::{Serialize, Serializer};
+use serde::{Serialize, Serializer, Deserialize};
 use std::fs;
 use std::fs::*;
 use std::io;
@@ -87,6 +87,15 @@ impl Serialize for Player {
 	}
 }
 
+// TODO: check if I can make the updated, created and uuid strs
+#[derive(Serialize, Deserialize)]
+pub struct GameListing {
+    name: String,
+    time_created: String,
+    last_updated: String,
+    uuid: String,
+}
+
 // decide where to put the logic for interacting with the json "database"
 // write logic for displaying the list of games available
 // -> check if db exists
@@ -94,9 +103,28 @@ impl Serialize for Player {
 // -> write a game to db
 // -> delete a game from the db
 
+// make a game listing, try to serialize and save to json, try to read a few games with a read_game
+// function
+
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
     let mut app = App::default();
- 
+
+    let my_gamelisting = GameListing { 
+        name: "my crazy ulm game".to_string(), 
+        time_created: "14:00PM".to_string(),
+        last_updated: "24.24.22".to_string(), 
+        uuid: "abcdefgh12345123123".to_string(), 
+    };
+
+    let json_string = serde_json::to_string_pretty(&my_gamelisting)
+        .expect("unable to serialize");
+
+    db::check_exists();
+
+    let games: Vec<GameListing> = db::read_games();
+
+    fs::write("listing.json", &json_string);
+
 	loop {
 		match app.app_state {
 			AppState::GameSelect => {
@@ -158,8 +186,7 @@ fn main() {
 	run_app(&mut terminal).expect("app failed to start");
 
 	/*
-
-	let mut game_data = mocp_lib::Game::default();
+let mut game_data = mocp_lib::Game::default();
 	let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
 	let mut last_time: String = String::new();
 
@@ -199,5 +226,6 @@ fn main() {
 			println!("Sleeping....");
 			thread::sleep(time::Duration::new(5, 0));
 		}
-	}*/
+	}
+*/
 }
