@@ -1,4 +1,4 @@
-use std::{path::Path, fs::{File, self}, io::Read};
+use std::{path::Path, fs::{File, self}, io::{Read, Write}};
 
 use crate::GameListing;
 
@@ -17,7 +17,7 @@ pub fn check_exists() {
         .expect("failed to write empty vec");
 }
 
-pub fn read_games() -> Vec<GameListing> {
+pub fn read_listings() -> Vec<GameListing> {
     let mut file_content = String::new();
     
     File::open("db.json")
@@ -29,4 +29,24 @@ pub fn read_games() -> Vec<GameListing> {
         .expect("failed to deserialize");
 
     listings
+}
+
+pub fn read_games() -> Vec<String> {
+    let listings: Vec<GameListing> = read_listings();
+    let mut games: Vec<String> = Vec::new();
+    
+    for listing in listings {
+        games.push(listing.name);
+    }
+
+    games
+}
+
+pub fn write_listings(listings: Vec<GameListing>) {
+    let mut file = File::open("db.json")
+        .expect("failed to open db file");
+    let listings_json = serde_json::to_string_pretty(&listings)
+        .expect("failed to serialize");
+
+    file.write(&listings_json.as_bytes());
 }

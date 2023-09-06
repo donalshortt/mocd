@@ -1,4 +1,4 @@
-use crate::App;
+use crate::{App, db};
 
 use crossterm::{
 	event::EnableMouseCapture,
@@ -24,11 +24,10 @@ impl Default for StatefulList<'_> {
 		StatefulList {
 			state: ListState::default(),
 			//TODO: create a function to get the list items from a datafile
-			items: vec![
-				ListItem::new("test"),
-				ListItem::new("bigtest"),
-				ListItem::new("quit"),
-			],
+			items: db::read_games()
+                .iter()
+                .map(|s| ListItem::new(s.to_string()))
+                .collect()
 		}
 	}
 }

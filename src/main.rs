@@ -96,34 +96,21 @@ pub struct GameListing {
     uuid: String,
 }
 
-// decide where to put the logic for interacting with the json "database"
-// write logic for displaying the list of games available
-// -> check if db exists
-// -> read the games from the db
-// -> write a game to db
-// -> delete a game from the db
-
-// make a game listing, try to serialize and save to json, try to read a few games with a read_game
-// function
-
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
+    db::check_exists();
     let mut app = App::default();
 
-    let my_gamelisting = GameListing { 
-        name: "my crazy ulm game".to_string(), 
-        time_created: "14:00PM".to_string(),
-        last_updated: "24.24.22".to_string(), 
-        uuid: "abcdefgh12345123123".to_string(), 
+    
+    let listing: GameListing = GameListing { 
+        name: "test".to_string(), 
+        time_created: "11:33AM".to_string(), 
+        last_updated: "23.44.11".to_string(), 
+        uuid: "wowowowowow123445566".to_string(),
     };
 
-    let json_string = serde_json::to_string_pretty(&my_gamelisting)
-        .expect("unable to serialize");
-
-    db::check_exists();
-
-    let games: Vec<GameListing> = db::read_games();
-
-    fs::write("listing.json", &json_string);
+    let mut listings = db::read_listings();
+    listings.push(listing);
+    db::write_listings(listings);
 
 	loop {
 		match app.app_state {
