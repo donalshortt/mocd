@@ -1,6 +1,6 @@
-use std::{path::Path, fs::{File, self, OpenOptions}, io::{Read, Write}};
+use std::{path::Path, fs::{File, self, OpenOptions}, io::Read};
 
-use crate::GameListing;
+use crate::ui::GameListing;
 
 pub fn check_exists() {
 	if Path::new("db.json").exists() {

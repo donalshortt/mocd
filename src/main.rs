@@ -90,32 +90,17 @@ impl Serialize for Player {
 	}
 }
 
-// TODO: check if I can make the updated, created and uuid strs
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GameListing {
-    name: String,
-    time_created: String,
-    last_updated: String,
-    uuid: String,
-}
+// press "c" to create a new game
+// -> open up the new game window
+// -> enter game name
+// -> generate the time created
+// -> set time updated equal to time created
+// -> generate uuid for the gamelisting
+// -> maybe the game name should be it's identifier?
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
     db::check_exists();
     let mut app = App::default();
-    
-    let listing: GameListing = GameListing { 
-        name: "test".to_string(), 
-        time_created: "11:33AM".to_string(), 
-        last_updated: "23.44.11".to_string(), 
-        uuid: "wowowowowow123445566".to_string(),
-    };
-
-    let mut listings: Vec<GameListing> = db::read_listings();
-    listings.push(listing);
-    db::write_listings(listings);
-
-    let updated_listings: Vec<GameListing> = db::read_listings();
-
 
 	loop {
 		match app.app_state {
@@ -126,6 +111,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 				if let Event::Key(key) = event::read()? {
 					match key.code {
 						KeyCode::Char('q') => return Ok(()),
+                        KeyCode::Char('c') => app.app_state = AppState::NewGame,
 						KeyCode::Down => app.games.next(),
 						KeyCode::Up => app.games.previous(),
 						_ => {}
@@ -168,9 +154,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			println!("Sleeping....");
 			thread::sleep(time::Duration::new(5, 0));
 	    }*/
-
-    Ok(())
-	//}
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

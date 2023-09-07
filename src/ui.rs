@@ -5,12 +5,12 @@ use crossterm::{
 	execute,
 	terminal::{enable_raw_mode, EnterAlternateScreen},
 };
+use serde::{Serialize, Deserialize};
 use std::io;
 use tui::{
 	backend::CrosstermBackend,
-	layout::{Constraint, Direction, Layout},
 	style::{Color, Modifier, Style},
-	widgets::{Block, Borders, List, ListItem, ListState, Widget},
+	widgets::{Block, Borders, List, ListItem, ListState},
 	Terminal,
 };
 
@@ -62,9 +62,13 @@ impl StatefulList<'_> {
 	}
 }
 
+// TODO: check if I can make the updated, created and uuid strs
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GameListing {
-    name: String,
-    date_created: String,
+    pub name: String,
+    time_created: String,
+    last_updated: String,
+    uuid: String,
 }
 
 pub fn gameselect(
@@ -83,6 +87,15 @@ pub fn gameselect(
 	})?;
 
 	Ok(())
+}
+
+pub fn newgame(
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    app: &mut App,
+) -> Result<(), io::Error> {
+    
+
+    Ok(())
 }
 
 pub fn ui_setup() -> Result<Terminal<CrosstermBackend<io::Stdout>>, io::Error> {
