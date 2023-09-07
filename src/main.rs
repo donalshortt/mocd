@@ -8,9 +8,12 @@ extern crate chrono;
 use crate::ui::StatefulList;
 use chrono::offset::Utc;
 use chrono::DateTime;
-use crossterm::event::{self, Event, KeyCode};
+use crossterm::event::{self, Event, KeyCode, DisableMouseCapture};
+use crossterm::execute;
+use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer, Deserialize};
+use std::error::Error;
 use std::fs;
 use std::fs::*;
 use std::io;
@@ -88,7 +91,7 @@ impl Serialize for Player {
 }
 
 // TODO: check if I can make the updated, created and uuid strs
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GameListing {
     name: String,
     time_created: String,
@@ -99,7 +102,6 @@ pub struct GameListing {
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
     db::check_exists();
     let mut app = App::default();
-
     
     let listing: GameListing = GameListing { 
         name: "test".to_string(), 
@@ -108,9 +110,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
         uuid: "wowowowowow123445566".to_string(),
     };
 
-    let mut listings = db::read_listings();
+    let mut listings: Vec<GameListing> = db::read_listings();
     listings.push(listing);
     db::write_listings(listings);
+
+    let updated_listings: Vec<GameListing> = db::read_listings();
+
 
 	loop {
 		match app.app_state {
@@ -162,16 +167,27 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 		} else {
 			println!("Sleeping....");
 			thread::sleep(time::Duration::new(5, 0));
-		}*/
-	}
+	    }*/
+
+    Ok(())
+	//}
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
 	let mut terminal = ui::ui_setup().unwrap();
 
 	//ui::update_dashboard(ui);
 	run_app(&mut terminal).expect("app failed to start");
 
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+    terminal.show_cursor()?;
+
+    Ok(())
 	/*
 let mut game_data = mocp_lib::Game::default();
 	let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";

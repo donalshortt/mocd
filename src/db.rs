@@ -1,4 +1,4 @@
-use std::{path::Path, fs::{File, self}, io::{Read, Write}};
+use std::{path::Path, fs::{File, self, OpenOptions}, io::{Read, Write}};
 
 use crate::GameListing;
 
@@ -43,10 +43,13 @@ pub fn read_games() -> Vec<String> {
 }
 
 pub fn write_listings(listings: Vec<GameListing>) {
-    let mut file = File::open("db.json")
-        .expect("failed to open db file");
-    let listings_json = serde_json::to_string_pretty(&listings)
-        .expect("failed to serialize");
+    let file_path = "db.json";
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(file_path)
+        .expect("failed to open db");
 
-    file.write(&listings_json.as_bytes());
+    serde_json::to_writer_pretty(&mut file, &listings)
+        .expect("failed to write to db");
 }
