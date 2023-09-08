@@ -1,18 +1,19 @@
-use crate::{App, db};
+use crate::{db, App};
 
 use crossterm::{
 	event::EnableMouseCapture,
 	execute,
 	terminal::{enable_raw_mode, EnterAlternateScreen},
 };
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::io;
 use tui::{
 	backend::CrosstermBackend,
 	style::{Color, Modifier, Style},
 	widgets::{Block, Borders, List, ListItem, ListState},
-	Terminal,
+	Terminal, layout::{Constraint, Direction, Layout},
 };
+use uuid::Uuid;
 
 pub struct StatefulList<'a> {
 	pub state: ListState,
@@ -25,9 +26,9 @@ impl Default for StatefulList<'_> {
 			state: ListState::default(),
 			//TODO: create a function to get the list items from a datafile
 			items: db::read_games()
-                .iter()
-                .map(|s| ListItem::new(s.to_string()))
-                .collect()
+				.iter()
+				.map(|s| ListItem::new(s.to_string()))
+				.collect(),
 		}
 	}
 }
@@ -65,10 +66,14 @@ impl StatefulList<'_> {
 // TODO: check if I can make the updated, created and uuid strs
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GameListing {
-    pub name: String,
-    time_created: String,
-    last_updated: String,
-    uuid: String,
+	pub(crate) name: String,
+	pub(crate) time_created: String,
+	pub(crate) last_updated: String,
+	pub(crate) uuid: String,
+}
+
+impl GameListing {
+    pub fn new(name: String, time_created: String, last_updated: String, uuid: String) -> Self { Self { name, time_created, last_updated, uuid } }
 }
 
 pub fn gameselect(
@@ -89,13 +94,28 @@ pub fn gameselect(
 	Ok(())
 }
 
-pub fn newgame(
-    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-    app: &mut App,
-) -> Result<(), io::Error> {
-    
+// to control the layout im gonna have to wrap all of these things in a terminal draw, assuming i
+// want to use closures -> maybe find a nicer way to do this so that i don't have so much
+// indentation
+//
 
-    Ok(())
+pub fn newgame(
+	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+	app: &mut App,
+) -> Result<(), io::Error> {
+        let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(2)
+        .constraints(
+            [
+                Constraint::Length(1),
+                Constraint::Length(3),
+            ]
+            .as_ref(),
+        )
+        .split(f.size());
+
+	Ok(())
 }
 
 pub fn ui_setup() -> Result<Terminal<CrosstermBackend<io::Stdout>>, io::Error> {
