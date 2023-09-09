@@ -13,6 +13,7 @@ use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
+use tui::widgets::ListItem;
 use ui::GameListing;
 use std::error::Error;
 use std::fs;
@@ -109,6 +110,11 @@ fn create_gamelisting(name: String) {
         last_updated: current_date.to_string(),
         uuid: Uuid::new_v4().to_string(),       
     };
+    
+    //TODO: is it really necessary to read and write here?
+    let mut listings = db::read_listings();
+    listings.push(listing);
+    db::write_listings(listings);
 }
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
@@ -139,10 +145,18 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::NewGame => {
+                terminal.draw(|f| { ui::newgame(f, &mut app, &user_input).unwrap(); })
+                    .expect("failed to draw newgame ui");
+
 				if let Event::Key(key) = event::read()? {
 					match key.code {
 						KeyCode::Enter => {
 							create_gamelisting(user_input.drain(..).collect());
+                            app.games.items = db::read_games()
+                                .iter()
+                                .map(|s| ListItem::new(s.to_string()))
+                                .collect();
+                            app.app_state = AppState::GameSelect
 						}
 						KeyCode::Char(c) => {
                             user_input.push(c);

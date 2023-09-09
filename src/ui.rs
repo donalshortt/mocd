@@ -8,12 +8,13 @@ use crossterm::{
 use serde::{Deserialize, Serialize};
 use std::io;
 use tui::{
-	backend::CrosstermBackend,
+	backend::{CrosstermBackend, Backend},
 	style::{Color, Modifier, Style},
-	widgets::{Block, Borders, List, ListItem, ListState},
-	Terminal, layout::{Constraint, Direction, Layout},
+	widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+	Terminal, layout::{Constraint, Direction, Layout}, Frame, text::{Span, Text, Spans},
 };
 use uuid::Uuid;
+use unicode_width::UnicodeWidthStr;
 
 pub struct StatefulList<'a> {
 	pub state: ListState,
@@ -99,21 +100,45 @@ pub fn gameselect(
 // indentation
 //
 
-pub fn newgame(
-	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+pub fn newgame<B: Backend>(
+	f: &mut Frame<B>,
 	app: &mut App,
+    user_input: &String
 ) -> Result<(), io::Error> {
-        let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(2)
-        .constraints(
-            [
-                Constraint::Length(1),
-                Constraint::Length(3),
-            ]
-            .as_ref(),
-        )
-        .split(f.size());
+    let chunks = Layout::default()
+    .direction(Direction::Vertical)
+    .margin(2)
+    .constraints(
+        [
+            Constraint::Length(1),
+            Constraint::Length(3),
+        ]
+        .as_ref(),
+    )
+    .split(f.size());
+
+    // prepare and render the help message
+    let msg = vec![
+        Span::raw("Create a game, press "),
+        Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+        Span::raw(" to go back.")
+    ];
+
+    let mut text = Text::from(Spans::from(msg));
+    text.patch_style(Style::default());
+    let info_message = Paragraph::new(text);
+    f.render_widget(info_message, chunks[0]);
+
+    // prepare and render the input box
+    let input = Paragraph::new(user_input.as_ref())
+    .style(Style::default())
+    .block(Block::default().borders(Borders::ALL).title("Input"));
+    f.render_widget(input, chunks[1]);
+
+    f.set_cursor(
+        chunks[1].x + user_input.width() as u16 + 1,
+        chunks[1].y + 1
+    );
 
 	Ok(())
 }
