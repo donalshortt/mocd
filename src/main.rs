@@ -13,14 +13,14 @@ use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
-use tui::widgets::ListItem;
-use ui::GameListing;
 use std::error::Error;
 use std::fs;
 use std::fs::*;
 use std::io;
 use std::io::Read;
 use std::path::Path;
+use tui::widgets::ListItem;
+use ui::GameListing;
 
 use uuid::Uuid;
 
@@ -93,34 +93,31 @@ impl Serialize for Player {
 	}
 }
 
-// press "c" to create a new game
-// -> open up the new game window
-// -> enter game name
-// -> generate the time created
-// -> set time updated equal to time created
-// -> generate uuid for the gamelisting
-// -> maybe the game name should be it's identifier?
+
+// press "enter" on an item to enter the dashboard
+// display, as list, each time an update is sent
+// include time sent and maybe the bytes?
 
 fn create_gamelisting(name: String) {
-    let current_date = Local::now().date_naive();
+	let current_date = Local::now().date_naive();
 
-    let listing = GameListing {
-        name,
-        time_created: current_date.to_string(),
-        last_updated: current_date.to_string(),
-        uuid: Uuid::new_v4().to_string(),       
-    };
-    
-    //TODO: is it really necessary to read and write here?
-    let mut listings = db::read_listings();
-    listings.push(listing);
-    db::write_listings(listings);
+	let listing = GameListing {
+		name,
+		time_created: current_date.to_string(),
+		last_updated: current_date.to_string(),
+		uuid: Uuid::new_v4().to_string(),
+	};
+
+	//TODO: is it really necessary to read and write here?
+	let mut listings = db::read_listings();
+	listings.push(listing);
+	db::write_listings(listings);
 }
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 	db::check_exists();
 	let mut app = App::default();
-    let mut user_input = String::new();
+	let mut user_input = String::new();
 
 	loop {
 		match app.app_state {
@@ -145,28 +142,29 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::NewGame => {
-                terminal.draw(|f| { ui::newgame(f, &mut app, &user_input).unwrap(); })
-                    .expect("failed to draw newgame ui");
+				terminal
+					.draw(|f| {
+						ui::newgame(f, &mut app, &user_input).unwrap();
+					})
+					.expect("failed to draw newgame ui");
 
 				if let Event::Key(key) = event::read()? {
 					match key.code {
 						KeyCode::Enter => {
 							create_gamelisting(user_input.drain(..).collect());
-                            app.games.items = db::read_games()
-                                .iter()
-                                .map(|s| ListItem::new(s.to_string()))
-                                .collect();
-                            app.app_state = AppState::GameSelect
+							app.games.items = db::read_games()
+								.iter()
+								.map(|s| ListItem::new(s.to_string()))
+								.collect();
+							app.app_state = AppState::GameSelect
 						}
 						KeyCode::Char(c) => {
-                            user_input.push(c);
-                        }
+							user_input.push(c);
+						}
 						KeyCode::Backspace => {
-                            user_input.pop(); 
-                        }
-						KeyCode::Esc => { 
-                            app.app_state = AppState::GameSelect
-                        }
+							user_input.pop();
+						}
+						KeyCode::Esc => app.app_state = AppState::GameSelect,
 						_ => {}
 					}
 				}

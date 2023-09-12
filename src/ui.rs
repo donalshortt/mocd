@@ -8,13 +8,15 @@ use crossterm::{
 use serde::{Deserialize, Serialize};
 use std::io;
 use tui::{
-	backend::{CrosstermBackend, Backend},
+	backend::{Backend, CrosstermBackend},
+	layout::{Constraint, Direction, Layout},
 	style::{Color, Modifier, Style},
+	text::{Span, Spans, Text},
 	widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
-	Terminal, layout::{Constraint, Direction, Layout}, Frame, text::{Span, Text, Spans},
+	Frame, Terminal,
 };
-use uuid::Uuid;
 use unicode_width::UnicodeWidthStr;
+use uuid::Uuid;
 
 pub struct StatefulList<'a> {
 	pub state: ListState,
@@ -74,7 +76,14 @@ pub struct GameListing {
 }
 
 impl GameListing {
-    pub fn new(name: String, time_created: String, last_updated: String, uuid: String) -> Self { Self { name, time_created, last_updated, uuid } }
+	pub fn new(name: String, time_created: String, last_updated: String, uuid: String) -> Self {
+		Self {
+			name,
+			time_created,
+			last_updated,
+			uuid,
+		}
+	}
 }
 
 pub fn gameselect(
@@ -95,50 +104,46 @@ pub fn gameselect(
 	Ok(())
 }
 
-// to control the layout im gonna have to wrap all of these things in a terminal draw, assuming i
-// want to use closures -> maybe find a nicer way to do this so that i don't have so much
-// indentation
-//
-
 pub fn newgame<B: Backend>(
 	f: &mut Frame<B>,
 	app: &mut App,
-    user_input: &String
+	user_input: &String,
 ) -> Result<(), io::Error> {
-    let chunks = Layout::default()
-    .direction(Direction::Vertical)
-    .margin(2)
-    .constraints(
-        [
-            Constraint::Length(1),
-            Constraint::Length(3),
-        ]
-        .as_ref(),
-    )
-    .split(f.size());
+	let chunks = Layout::default()
+		.direction(Direction::Vertical)
+		.margin(2)
+		.constraints(
+			[
+				Constraint::Length(1),
+				Constraint::Length(3),
+				Constraint::Max(1),
+			]
+			.as_ref(),
+		)
+		.split(f.size());
 
-    // prepare and render the help message
-    let msg = vec![
-        Span::raw("Create a game, press "),
-        Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
-        Span::raw(" to go back.")
-    ];
+	// prepare and render the help message
+	let msg = vec![
+		Span::raw("Create a game, press "),
+		Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw(" to go back."),
+	];
 
-    let mut text = Text::from(Spans::from(msg));
-    text.patch_style(Style::default());
-    let info_message = Paragraph::new(text);
-    f.render_widget(info_message, chunks[0]);
+	let mut text = Text::from(Spans::from(msg));
+	text.patch_style(Style::default());
+	let info_message = Paragraph::new(text);
+	f.render_widget(info_message, chunks[0]);
 
-    // prepare and render the input box
-    let input = Paragraph::new(user_input.as_ref())
-    .style(Style::default())
-    .block(Block::default().borders(Borders::ALL).title("Input"));
-    f.render_widget(input, chunks[1]);
+	// prepare and render the input box
+	let input = Paragraph::new(user_input.as_ref())
+		.style(Style::default())
+		.block(Block::default().borders(Borders::ALL).title("Input"));
+	f.render_widget(input, chunks[1]);
 
-    f.set_cursor(
-        chunks[1].x + user_input.width() as u16 + 1,
-        chunks[1].y + 1
-    );
+	let blank = Block::default().style(Style::default());
+	f.render_widget(blank, chunks[2]);
+
+	f.set_cursor(chunks[1].x + user_input.width() as u16 + 1, chunks[1].y + 1);
 
 	Ok(())
 }
