@@ -96,7 +96,13 @@ impl Serialize for Player {
 
 // press "enter" on an item to enter the dashboard
 // display, as list, each time an update is sent
-// include time sent and maybe the bytes?
+// include time sent && which year was sent.
+
+// maybe include an options page?
+//
+// maybe include a welcome page?
+//
+// 
 
 fn create_gamelisting(name: String) {
 	let current_date = Local::now().date_naive();
@@ -118,6 +124,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 	db::check_exists();
 	let mut app = App::default();
 	let mut user_input = String::new();
+    let mut selected_index = -1;
 
 	loop {
 		match app.app_state {
@@ -127,10 +134,22 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 
 				if let Event::Key(key) = event::read()? {
 					match key.code {
-						KeyCode::Char('q') => return Ok(()),
-						KeyCode::Char('c') => app.app_state = AppState::NewGame,
-						KeyCode::Down => app.games.next(),
-						KeyCode::Up => app.games.previous(),
+						KeyCode::Char('q') => {
+                            return Ok(());
+                        }
+						KeyCode::Char('c') => {
+                            app.app_state = AppState::NewGame;
+                        }
+						KeyCode::Down => {
+                            app.games.next();
+                        }
+						KeyCode::Up => {
+                            app.games.previous();
+                        }
+                        KeyCode::Enter => {
+                            let selected = app.games.state.selected();
+                            app.app_state = AppState::Dashboard;
+                        }
 						_ => {}
 					}
 				}
@@ -138,14 +157,18 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 
 			AppState::Dashboard => {
 				// ui::dashboard();
-				println!("dashboard");
+				if let Event::Key(key) = event::read()? {
+					match key.code {
+						KeyCode::Char('q') => {
+                            return Ok(());
+                        }
+                        _ => {}
+                    }
+                }
 			}
 
 			AppState::NewGame => {
-				terminal
-					.draw(|f| {
-						ui::newgame(f, &mut app, &user_input).unwrap();
-					})
+				terminal.draw(|f| {ui::newgame(f, &mut app, &user_input).unwrap();})
 					.expect("failed to draw newgame ui");
 
 				if let Event::Key(key) = event::read()? {
