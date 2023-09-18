@@ -14,7 +14,7 @@ use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
 use std::error::Error;
-use std::fs;
+use std::{fs, thread, time};
 use std::fs::*;
 use std::io;
 use std::io::Read;
@@ -124,7 +124,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 	db::check_exists();
 	let mut app = App::default();
 	let mut user_input = String::new();
-    let mut selected_index = -1;
+    let mut selected_index = Some(0);
+    let mut updates : Vec<ListItem> = Vec::new();
 
 	loop {
 		match app.app_state {
@@ -147,7 +148,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                             app.games.previous();
                         }
                         KeyCode::Enter => {
-                            let selected = app.games.state.selected();
+                            selected_index = app.games.state.selected();
                             app.app_state = AppState::Dashboard;
                         }
 						_ => {}
@@ -165,6 +166,63 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                         _ => {}
                     }
                 }
+
+                       
+                // for now just focus on adding a Sent! message to the list
+                // a vec of ListItem
+
+                //gets the latest time modified from the save location
+                //gets the latest time right now 
+                // converts it all into a var called latest time 
+
+
+
+                
+
+                // the point here is to send only one update per year. if we send multiple we will
+                // duplicate years and the frontend does not check for this
+                //
+                // a file is created to hold the time that the savefile was last modified.
+                // we use a file and not just some var in case the program crashes, again because
+                // if we sent a duplicate update by accident, amending this would be annoying
+                
+	            let mut game_data = Game::default();
+                let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
+                let mut last_time: String = String::new();
+
+                let mut file: File;
+                if !Path::new("last_metadata.txt").exists() {
+                    File::create("last_metadata.txt")
+                        .expect("failed to create last file to record time of last metadata access");
+                }
+
+                file = File::open("last_metadata.txt")
+                    .expect("Unable to open file to read time of last metadata access");
+                file.read_to_string(&mut last_time).unwrap();
+
+                let latest_metadata = fs::metadata(filepath)
+                    .expect("Couldn't get metadata from savefile")
+                    .modified()
+                    .expect("Couldn't get time modified from metadata");
+                let latest_datetime: DateTime<Utc> = latest_metadata.into();
+                let latest_time = latest_datetime.format("%T").to_string();
+
+                if latest_time != last_time {
+                    // write to file instead of this variable
+                    fs::write("last_metadata.txt", latest_time.clone())
+                        .expect("failed to write time last modified to file");
+
+                    parser::parse(filepath, &mut game_data);
+                    sender::send(&game_data);
+
+                    println!("Sent!");
+                    updates.push(ListItem::new("Sent info for year ".to_string() + &game_data.date + " at " + &latest_time))
+                } else {
+                    thread::sleep(time::Duration::new(5, 0));
+                }
+
+                ui::dashboard(terminal, updates.clone())
+                    .expect("failed to display dashboard ui");
 			}
 
 			AppState::NewGame => {
@@ -193,39 +251,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 				}
 			}
 		}
-
-		/*let latest_metadata = fs::metadata(filepath)
-			.expect("Couldn't get metadata from savefile")
-			.modified()
-			.expect("Couldn't get time modified from metadata");
-		let latest_datetime: DateTime<Utc> = latest_metadata.into();
-		let latest_time = latest_datetime.format("%T").to_string();
-
-		println!("Latest time from metadata: {}", latest_time);
-		println!("Last time from file: {}", last_time);
-		if latest_time != last_time {
-			// write to file instead of this variable
-			last_time = latest_time.clone();
-			fs::write("last_metadata.txt", last_time.clone())
-				.expect("Unable to write time last modified to file");
-
-			fs::write("last_metadata.txt", latest_time).expect("Unable to write time to file!");
-
-			parser::parse(filepath, &mut game_data);
-			sender::send(&game_data);
-
-			println!("Sent!");
-		} else {
-			println!("Sleeping....");
-			thread::sleep(time::Duration::new(5, 0));
-		}*/
 	}
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let mut terminal = ui::ui_setup().unwrap();
 
-	//ui::update_dashboard(ui);
 	run_app(&mut terminal).expect("app failed to start");
 
 	disable_raw_mode()?;
@@ -237,47 +268,4 @@ fn main() -> Result<(), Box<dyn Error>> {
 	terminal.show_cursor()?;
 
 	Ok(())
-	/*
-	let mut game_data = mocp_lib::Game::default();
-		let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
-		let mut last_time: String = String::new();
-
-		let mut file: File;
-		if !Path::new("last_metadata.txt").exists() {
-			File::create("last_metadata.txt")
-				.expect("Could not create last file to record time of last metadata access");
-		}
-
-		file = File::open("last_metadata.txt")
-			.expect("Unable to open file to read time of last metadata access");
-		file.read_to_string(&mut last_time).unwrap();
-
-		loop {
-			let latest_metadata = fs::metadata(filepath)
-				.expect("Couldn't get metadata from savefile")
-				.modified()
-				.expect("Couldn't get time modified from metadata");
-			let latest_datetime: DateTime<Utc> = latest_metadata.into();
-			let latest_time = latest_datetime.format("%T").to_string();
-
-			println!("Latest time from metadata: {}", latest_time);
-			println!("Last time from file: {}", last_time);
-			if latest_time != last_time {
-				// write to file instead of this variable
-				last_time = latest_time.clone();
-				fs::write("last_metadata.txt", last_time.clone())
-					.expect("Unable to write time last modified to file");
-
-				fs::write("last_metadata.txt", latest_time).expect("Unable to write time to file!");
-
-				parser::parse(filepath, &mut game_data);
-				sender::send(&game_data);
-
-				println!("Sent!");
-			} else {
-				println!("Sleeping....");
-				thread::sleep(time::Duration::new(5, 0));
-			}
-		}
-	*/
 }

@@ -148,6 +148,25 @@ pub fn newgame<B: Backend>(
 	Ok(())
 }
 
+pub fn dashboard(
+	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+	updates: Vec<ListItem>,
+) -> Result<(), io::Error> {
+
+    // TODO: have a info box displayed at the time: the game name basically
+
+	let list = List::new(updates)
+		.block(Block::default().title("Updates").borders(Borders::ALL))
+		.style(Style::default().fg(Color::White));
+
+    terminal.draw(|f| {
+		let size = f.size();
+		f.render_widget(list, size);
+	})?;
+
+	Ok(())
+}
+
 pub fn ui_setup() -> Result<Terminal<CrosstermBackend<io::Stdout>>, io::Error> {
 	enable_raw_mode()?;
 	let mut stdout = io::stdout();
