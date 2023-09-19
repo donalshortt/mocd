@@ -12,8 +12,9 @@ use crossterm::event::{self, DisableMouseCapture, Event, KeyCode};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 use std::error::Error;
+use std::time::{Duration, Instant};
 use std::{fs, thread, time};
 use std::fs::*;
 use std::io;
@@ -121,11 +122,17 @@ fn create_gamelisting(name: String) {
 }
 
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
-	db::check_exists();
+	//TODO: something about this
+    db::check_exists();
 	let mut app = App::default();
 	let mut user_input = String::new();
     let mut selected_index = Some(0);
     let mut updates : Vec<ListItem> = Vec::new();
+    let mut game_data = Game::default();
+    let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
+    let mut last_time: String = String::new();
+    let tick_rate = Duration::from_millis(250);
+    let last_tick = Instant::now();
 
 	loop {
 		match app.app_state {
@@ -157,13 +164,24 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::Dashboard => {
-				// ui::dashboard();
-				if let Event::Key(key) = event::read()? {
-					match key.code {
-						KeyCode::Char('q') => {
-                            return Ok(());
+                ui::dashboard(terminal, updates.clone())
+                    .expect("failed to display dashboard ui");
+
+
+                // it seems that there is a buffer of inputs that get dealt with in a LIFO manner,
+                // as a result i can spam a bunch of input and then finally "q" and it will take
+                // forever to quit the program
+                let timeout = tick_rate
+                    .checked_sub(last_tick.elapsed())
+                    .unwrap_or_else(|| Duration::from_secs(0));
+                if crossterm::event::poll(timeout).unwrap() {
+                    if let Event::Key(key) = event::read()? {
+                        match key.code {
+                            KeyCode::Char('q') => {
+                                return Ok(());
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
 
@@ -175,20 +193,13 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                 //gets the latest time right now 
                 // converts it all into a var called latest time 
 
-
-
-                
-
                 // the point here is to send only one update per year. if we send multiple we will
                 // duplicate years and the frontend does not check for this
                 //
                 // a file is created to hold the time that the savefile was last modified.
                 // we use a file and not just some var in case the program crashes, again because
-                // if we sent a duplicate update by accident, amending this would be annoying
-                
-	            let mut game_data = Game::default();
-                let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
-                let mut last_time: String = String::new();
+                // if we sent a duplicate update by accident, remedying this would be annoying
+
 
                 let mut file: File;
                 if !Path::new("last_metadata.txt").exists() {
@@ -215,14 +226,10 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                     parser::parse(filepath, &mut game_data);
                     sender::send(&game_data);
 
-                    println!("Sent!");
-                    updates.push(ListItem::new("Sent info for year ".to_string() + &game_data.date + " at " + &latest_time))
+                    updates.push(ListItem::new("Sent info for year ".to_string() + &game_data.date + " at " + &latest_time));
                 } else {
-                    thread::sleep(time::Duration::new(5, 0));
+                    updates.push(ListItem::new("Sleeping!"));
                 }
-
-                ui::dashboard(terminal, updates.clone())
-                    .expect("failed to display dashboard ui");
 			}
 
 			AppState::NewGame => {
