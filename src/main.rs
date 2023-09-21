@@ -17,7 +17,7 @@ use std::error::Error;
 use std::time::{Duration, Instant};
 use std::{fs, thread, time};
 use std::fs::*;
-use std::io;
+use std::io::{self, stderr, Write};
 use std::io::Read;
 use std::path::Path;
 use tui::widgets::ListItem;
@@ -189,8 +189,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                 // for now just focus on adding a Sent! message to the list
                 // a vec of ListItem
 
-                //gets the latest time modified from the save location
-                //gets the latest time right now 
+                // gets the latest time modified from the save location
+                // gets the latest time right now 
                 // converts it all into a var called latest time 
 
                 // the point here is to send only one update per year. if we send multiple we will
@@ -218,17 +218,27 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                 let latest_datetime: DateTime<Utc> = latest_metadata.into();
                 let latest_time = latest_datetime.format("%T").to_string();
 
+                writeln!(stderr(), "Latest time: {}", latest_time);
+                writeln!(stderr(), "Last time: {}", last_time);
+
                 if latest_time != last_time {
                     // write to file instead of this variable
+                    last_time = latest_time.clone();
                     fs::write("last_metadata.txt", latest_time.clone())
                         .expect("failed to write time last modified to file");
 
-                    parser::parse(filepath, &mut game_data);
-                    sender::send(&game_data);
-
+                    //parser::parse(filepath, &mut game_data);
+                    //sender::send(&game_data);
+                    //
+                    
                     updates.push(ListItem::new("Sent info for year ".to_string() + &game_data.date + " at " + &latest_time));
+                    //thread::sleep(Duration::from_secs(5));
                 } else {
+
+                    //TODO: if we press a key and happen to be sleeping in here, the program will
+                    //feel slow to respond
                     updates.push(ListItem::new("Sleeping!"));
+                    thread::sleep(Duration::from_secs(5));
                 }
 			}
 
