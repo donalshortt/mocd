@@ -1,3 +1,5 @@
 /target
-Cargo.lock
 /saves
+Cargo.lock
+last_metadata.txt
+db.json
