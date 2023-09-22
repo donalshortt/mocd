@@ -47,6 +47,7 @@ impl Default for App<'_> {
 	}
 }
 
+#[derive(Debug)]
 pub struct Game {
 	pub date: String,
 	pub name: String,
@@ -65,6 +66,7 @@ impl Default for Game {
 	}
 }
 
+#[derive(Debug)]
 pub struct Player {
 	pub igns: Vec<String>,
 	pub tag: String,
@@ -121,6 +123,16 @@ fn create_gamelisting(name: String) {
 	db::write_listings(listings);
 }
 
+fn get_game_id(selected_index: usize) -> Option<String> {
+    let listings: Vec<GameListing> = db::read_listings();
+
+    if selected_index < listings.len() {
+        Some(listings[selected_index].uuid)
+    } else {
+        None
+    }
+}
+
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 	//TODO: something about this
     db::check_exists();
@@ -133,6 +145,17 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
     let mut last_time: String = String::new();
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
+
+
+    let mut file: File;
+    if !Path::new("last_metadata.txt").exists() {
+        File::create("last_metadata.txt")
+            .expect("failed to create last file to record time of last metadata access");
+    }
+
+    file = File::open("last_metadata.txt")
+        .expect("Unable to open file to read time of last metadata access");
+    file.read_to_string(&mut last_time).unwrap();
 
 	loop {
 		match app.app_state {
@@ -156,6 +179,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                         }
                         KeyCode::Enter => {
                             selected_index = app.games.state.selected();
+                            game_data.id = get_game_id(selected_index.unwrap()).unwrap();
                             app.app_state = AppState::Dashboard;
                         }
 						_ => {}
@@ -200,17 +224,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                 // we use a file and not just some var in case the program crashes, again because
                 // if we sent a duplicate update by accident, remedying this would be annoying
 
-
-                let mut file: File;
-                if !Path::new("last_metadata.txt").exists() {
-                    File::create("last_metadata.txt")
-                        .expect("failed to create last file to record time of last metadata access");
-                }
-
-                file = File::open("last_metadata.txt")
-                    .expect("Unable to open file to read time of last metadata access");
-                file.read_to_string(&mut last_time).unwrap();
-
                 let latest_metadata = fs::metadata(filepath)
                     .expect("Couldn't get metadata from savefile")
                     .modified()
@@ -218,21 +231,16 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                 let latest_datetime: DateTime<Utc> = latest_metadata.into();
                 let latest_time = latest_datetime.format("%T").to_string();
 
-                writeln!(stderr(), "Latest time: {}", latest_time);
-                writeln!(stderr(), "Last time: {}", last_time);
-
                 if latest_time != last_time {
                     // write to file instead of this variable
                     last_time = latest_time.clone();
                     fs::write("last_metadata.txt", latest_time.clone())
                         .expect("failed to write time last modified to file");
 
-                    //parser::parse(filepath, &mut game_data);
-                    //sender::send(&game_data);
-                    //
+                    parser::parse(filepath, &mut game_data);
+                    sender::send(&game_data);
                     
                     updates.push(ListItem::new("Sent info for year ".to_string() + &game_data.date + " at " + &latest_time));
-                    //thread::sleep(Duration::from_secs(5));
                 } else {
 
                     //TODO: if we press a key and happen to be sleeping in here, the program will
@@ -241,6 +249,14 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                     thread::sleep(Duration::from_secs(5));
                 }
 			}
+
+            // i want to assign a uuid to each game that is created, instead of getting it from the
+            // parser
+            // now that i create a gamelisting in database, i need a way of grabbing the uuid from
+            // listings and putting it in the object that the sender sends
+            // given that i have the selected index, i should just be able to access the db then
+            // select the gamelisting based on this index
+            // i want to load this uuid into the Game struct when i select a game
 
 			AppState::NewGame => {
 				terminal.draw(|f| {ui::newgame(f, &mut app, &user_input).unwrap();})

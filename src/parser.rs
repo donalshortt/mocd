@@ -101,11 +101,6 @@ pub fn parse(filepath: &str, game_data: &mut Game) {
 				game_data.name = ip[(name_start + 1)..(ip.len() - 5)].to_string();
 			}
 
-			if ip.contains("campaign_id") {
-				let id_start = ip.find('"').unwrap_or(0);
-				game_data.id = ip[(id_start + 1)..(ip.len() - 1)].to_string();
-			}
-
 			if reading_player_countries {
 				if ip.contains("}") && (ip.chars().count() == 1) {
 					reading_player_countries = false;
