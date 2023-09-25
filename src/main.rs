@@ -127,7 +127,7 @@ fn get_game_id(selected_index: usize) -> Option<String> {
     let listings: Vec<GameListing> = db::read_listings();
 
     if selected_index < listings.len() {
-        Some(listings[selected_index].uuid)
+        Some(listings[selected_index].uuid.clone())
     } else {
         None
     }
@@ -238,6 +238,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                         .expect("failed to write time last modified to file");
 
                     parser::parse(filepath, &mut game_data);
+                    writeln!(stderr(), "{:?}", game_data);
                     sender::send(&game_data);
                     
                     updates.push(ListItem::new("Sent info for year ".to_string() + &game_data.date + " at " + &latest_time));

@@ -3,6 +3,7 @@ use serde_json::{json, Value};
 
 use crate::Game;
 
+// TODO: derive serialize?
 fn to_json(game_data: &Game) -> Value {
 	let json = json!({
 		"date": game_data.date,

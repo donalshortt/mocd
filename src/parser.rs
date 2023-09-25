@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, stderr, Write};
 use std::path::Path;
 
 use crate::{Game, Player};
@@ -80,6 +80,8 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
 }
 
 pub fn parse(filepath: &str, game_data: &mut Game) {
+    writeln!(stderr(), "Parsed!");
+
 	let lines = read_lines(filepath).expect("lines extracted from file");
 
 	let mut reading_player_countries = false;
