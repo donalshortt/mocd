@@ -20,7 +20,7 @@ pub fn send(game_data: &Game) {
 
 	let client = reqwest::blocking::Client::new();
 	let _res = client
-		.post("http://127.0.0.1:3080/api/game_data")
+		.post("http://10.15.10.193:3080/api/game_data")
 		.header(CONTENT_TYPE, "application/json")
 		.json(&json)
 		.send();

@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{self, BufRead, stderr, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::{Game, Player};
 
@@ -79,7 +79,7 @@ fn insert_score_data(buffer: &Vec<String>, game_data: &mut Game) {
 	}
 }
 
-pub fn parse(filepath: &str, game_data: &mut Game) {
+pub fn parse(filepath: &PathBuf, game_data: &mut Game) {
     writeln!(stderr(), "Parsed!");
 
 	let lines = read_lines(filepath).expect("lines extracted from file");
@@ -93,12 +93,14 @@ pub fn parse(filepath: &str, game_data: &mut Game) {
 	for line in lines {
 		if let Ok(ip) = line {
 			if ip.contains("date") && game_data.date.is_empty() {
+                writeln!(stderr(), "Ip contains date!");
 				let date_start = ip.find('=').unwrap_or(0);
 				let date_end = ip.find('.').unwrap_or(0);
 				game_data.date = ip[(date_start + 1)..date_end].to_string();
 			}
 
 			if ip.contains("save_game") {
+                writeln!(stderr(), "Ip contains save_game!");
 				let name_start = ip.find('"').unwrap_or(0);
 				game_data.name = ip[(name_start + 1)..(ip.len() - 5)].to_string();
 			}
@@ -114,6 +116,7 @@ pub fn parse(filepath: &str, game_data: &mut Game) {
 			}
 
 			if ip.contains("players_countries") {
+                writeln!(stderr(), "Ip contains players_countries!");
 				reading_player_countries = true;
 			}
 

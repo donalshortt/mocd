@@ -19,7 +19,7 @@ use std::{fs, thread, time};
 use std::fs::*;
 use std::io::{self, stderr, Write};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tui::widgets::ListItem;
 use ui::GameListing;
 
@@ -133,6 +133,19 @@ fn get_game_id(selected_index: usize) -> Option<String> {
     }
 }
 
+fn get_savefile_path() -> PathBuf {
+    
+    #[cfg(target_os = "windows")]
+    {
+        return PathBuf::from("C:\\Users\\donal\\Documents\\Paradox Interactive\\Europa Universalis\\save games\\autosave");
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4")
+    }
+}
+
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 	//TODO: something about this
     db::check_exists();
@@ -140,12 +153,11 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 	let mut user_input = String::new();
     let mut selected_index = Some(0);
     let mut updates : Vec<ListItem> = Vec::new();
-    let mut game_data = Game::default();
-    let filepath = "/home/donal/projects/moc/mocp/saves/mp_autosave.eu4";
     let mut last_time: String = String::new();
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
 
+    let filepath = get_savefile_path();
 
     let mut file: File;
     if !Path::new("last_metadata.txt").exists() {
@@ -178,8 +190,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                             app.games.previous();
                         }
                         KeyCode::Enter => {
-                            selected_index = app.games.state.selected();
-                            game_data.id = get_game_id(selected_index.unwrap()).unwrap();
                             app.app_state = AppState::Dashboard;
                         }
 						_ => {}
@@ -224,12 +234,17 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                 // we use a file and not just some var in case the program crashes, again because
                 // if we sent a duplicate update by accident, remedying this would be annoying
 
-                let latest_metadata = fs::metadata(filepath)
+
+                let latest_metadata = fs::metadata(&filepath)
                     .expect("Couldn't get metadata from savefile")
                     .modified()
                     .expect("Couldn't get time modified from metadata");
                 let latest_datetime: DateTime<Utc> = latest_metadata.into();
                 let latest_time = latest_datetime.format("%T").to_string();
+                let mut game_data = Game::default();
+
+                selected_index = app.games.state.selected();
+                game_data.id = get_game_id(selected_index.unwrap()).unwrap();
 
                 if latest_time != last_time {
                     // write to file instead of this variable
@@ -237,7 +252,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                     fs::write("last_metadata.txt", latest_time.clone())
                         .expect("failed to write time last modified to file");
 
-                    parser::parse(filepath, &mut game_data);
+                    parser::parse(&filepath, &mut game_data);
                     writeln!(stderr(), "{:?}", game_data);
                     sender::send(&game_data);
                     
