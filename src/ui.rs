@@ -104,8 +104,8 @@ pub fn gameselect(
 	Ok(())
 }
 
-pub fn newgame<B: Backend>(
-	f: &mut Frame<B>,
+pub fn newgame<B: Backend> (
+	frame: &mut Frame<B>,
 	app: &mut App,
 	user_input: &String,
 ) -> Result<(), io::Error> {
@@ -120,7 +120,7 @@ pub fn newgame<B: Backend>(
 			]
 			.as_ref(),
 		)
-		.split(f.size());
+		.split(frame.size());
 
 	// prepare and render the help message
 	let msg = vec![
@@ -132,37 +132,94 @@ pub fn newgame<B: Backend>(
 	let mut text = Text::from(Spans::from(msg));
 	text.patch_style(Style::default());
 	let info_message = Paragraph::new(text);
-	f.render_widget(info_message, chunks[0]);
+	frame.render_widget(info_message, chunks[0]);
 
 	// prepare and render the input box
 	let input = Paragraph::new(user_input.as_ref())
 		.style(Style::default())
 		.block(Block::default().borders(Borders::ALL).title("Input"));
-	f.render_widget(input, chunks[1]);
+	frame.render_widget(input, chunks[1]);
 
 	let blank = Block::default().style(Style::default());
-	f.render_widget(blank, chunks[2]);
+	frame.render_widget(blank, chunks[2]);
 
-	f.set_cursor(chunks[1].x + user_input.width() as u16 + 1, chunks[1].y + 1);
+	frame.set_cursor(chunks[1].x + user_input.width() as u16 + 1, chunks[1].y + 1);
 
 	Ok(())
 }
 
-pub fn dashboard(
-	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-	updates: Vec<ListItem>,
+pub fn dashboard<B: Backend> (
+	frame: &mut Frame<B>,
+	mut updates: Vec<String>,
+    app: &App
 ) -> Result<(), io::Error> {
 
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(2)
+        .constraints(
+            [
+                Constraint::Length(5),
+                Constraint::Min(1),
+            ]
+            .as_ref()
+        )
+        .split(frame.size());
     // TODO: have a info box displayed at the time: the game name basically
+    
+    let banner = Block::default()
+        .title("Overview")
+        .borders(Borders::ALL);
 
-	let list = List::new(updates)
+    let name = Spans::from(vec![
+        Span::styled("Game name: ", Style::default().add_modifier(Modifier::BOLD)),
+        // TODO: instead of unrapping like a pleb, pattern match here!
+        // then also make sure to move the code that sets the current id in main, back to it's
+        // original home (after the terminal draw)
+        Span::from(crate::get_game_name(app.current_game.unwrap()).unwrap())]
+    );
+
+    
+
+    let text = Paragraph::new(vec![name]).block(banner);
+    frame.render_widget(text, chunks[0]);
+
+    
+    // in the unlikely event that this program runs for 1000 years and our list gets very big, this
+    // rotating log has got us covered
+    let list_item_height = 4;
+    let max_displayable_items = chunks[1].height / list_item_height;
+
+    if &updates.len() > &(max_displayable_items as usize) {
+        updates.remove(0);
+    }
+
+    let pretty_updates: Vec<ListItem> = 
+        updates
+        .iter()
+        .rev()
+        .map(|update|{
+            
+            let header = Spans::from(
+                Span::styled(format!("{:<9}", "INFO"), Style::default().fg(Color::Blue))
+            );
+            //let body = Spans::from("wowee");
+            let body = Spans::from(update.clone());
+
+            ListItem::new(vec![
+                Spans::from("-".repeat(chunks[1].width as usize)),
+                header,
+                Spans::from(""),
+                body
+            ])
+        })
+        .collect();
+
+	let list = List::new(pretty_updates)
 		.block(Block::default().title("Updates").borders(Borders::ALL))
 		.style(Style::default().fg(Color::White));
 
-    terminal.draw(|f| {
-		let size = f.size();
-		f.render_widget(list, size);
-	})?;
+	frame.render_widget(list, chunks[1]);
 
 	Ok(())
 }

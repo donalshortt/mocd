@@ -36,6 +36,7 @@ enum AppState {
 pub struct App<'a> {
 	app_state: AppState,
 	games: StatefulList<'a>,
+    current_game: Option<usize>,
 }
 
 impl Default for App<'_> {
@@ -43,6 +44,7 @@ impl Default for App<'_> {
 		App {
 			app_state: AppState::GameSelect,
 			games: StatefulList::default(),
+            current_game: None
 		}
 	}
 }
@@ -123,11 +125,21 @@ fn create_gamelisting(name: String) {
 	db::write_listings(listings);
 }
 
-fn get_game_id(selected_index: usize) -> Option<String> {
+pub fn get_game_id(selected_index: usize) -> Option<String> {
     let listings: Vec<GameListing> = db::read_listings();
 
     if selected_index < listings.len() {
         Some(listings[selected_index].uuid.clone())
+    } else {
+        None
+    }
+}
+
+pub fn get_game_name(selected_index: usize) -> Option<String> {
+    let listings: Vec<GameListing> = db::read_listings();
+
+    if selected_index < listings.len() {
+        Some(listings[selected_index].name.clone())
     } else {
         None
     }
@@ -142,7 +154,7 @@ fn get_savefile_path() -> PathBuf {
 
     #[cfg(target_os = "linux")]
     {
-        return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4")
+        return PathBuf::from("/home/donal/projects/moc/mocp/saves/mp_autosave.eu4")
     }
 }
 
@@ -151,11 +163,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
     db::check_exists();
 	let mut app = App::default();
 	let mut user_input = String::new();
-    let mut selected_index = Some(0);
-    let mut updates : Vec<ListItem> = Vec::new();
+    let mut updates : Vec<String> = Vec::new();
     let mut last_time: String = String::new();
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
+
+    let mut counter = 0;
 
     let filepath = get_savefile_path();
 
@@ -198,9 +211,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::Dashboard => {
-                ui::dashboard(terminal, updates.clone())
-                    .expect("failed to display dashboard ui");
-
+                let mut game_data = Game::default();
+                app.current_game = app.games.state.selected();
+                game_data.id = get_game_id(app.current_game.unwrap()).unwrap();
+	
+                terminal.draw(|frame| {ui::dashboard(frame, updates.clone(), &app).unwrap();})
+					.expect("failed to draw dashboard ui");
 
                 // it seems that there is a buffer of inputs that get dealt with in a LIFO manner,
                 // as a result i can spam a bunch of input and then finally "q" and it will take
@@ -219,14 +235,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                     }
                 }
 
-                       
-                // for now just focus on adding a Sent! message to the list
-                // a vec of ListItem
-
-                // gets the latest time modified from the save location
-                // gets the latest time right now 
-                // converts it all into a var called latest time 
-
                 // the point here is to send only one update per year. if we send multiple we will
                 // duplicate years and the frontend does not check for this
                 //
@@ -241,10 +249,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                     .expect("Couldn't get time modified from metadata");
                 let latest_datetime: DateTime<Utc> = latest_metadata.into();
                 let latest_time = latest_datetime.format("%T").to_string();
-                let mut game_data = Game::default();
-
-                selected_index = app.games.state.selected();
-                game_data.id = get_game_id(selected_index.unwrap()).unwrap();
 
                 if latest_time != last_time {
                     // write to file instead of this variable
@@ -256,12 +260,13 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                     writeln!(stderr(), "{:?}", game_data);
                     sender::send(&game_data);
                     
-                    updates.push(ListItem::new("Sent info for year ".to_string() + &game_data.date + " at " + &latest_time));
+                    updates.push(String::from("Sent update for year ".to_string() + &game_data.date + " at " + &latest_time));
                 } else {
 
                     //TODO: if we press a key and happen to be sleeping in here, the program will
                     //feel slow to respond
-                    updates.push(ListItem::new("Sleeping!"));
+                    updates.push(String::from("Look! An update: ".to_string() +  &counter.to_string()));
+                    counter += 1;
                     thread::sleep(Duration::from_secs(5));
                 }
 			}
