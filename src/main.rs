@@ -36,7 +36,8 @@ enum AppState {
 pub struct App<'a> {
 	app_state: AppState,
 	games: StatefulList<'a>,
-    current_game: Option<usize>,
+    current_game_index: Option<usize>,
+    current_game: Option<Game>
 }
 
 impl Default for App<'_> {
@@ -44,7 +45,8 @@ impl Default for App<'_> {
 		App {
 			app_state: AppState::GameSelect,
 			games: StatefulList::default(),
-            current_game: None
+            current_game_index: None,
+            current_game: None,
 		}
 	}
 }
@@ -109,6 +111,7 @@ impl Serialize for Player {
 //
 // 
 
+//TODO: this should be in db i think
 fn create_gamelisting(name: String) {
 	let current_date = Local::now().date_naive();
 
@@ -125,6 +128,8 @@ fn create_gamelisting(name: String) {
 	db::write_listings(listings);
 }
 
+
+// TODO: make these both methods of Game? or do they make more sense as functions in DB?
 pub fn get_game_id(selected_index: usize) -> Option<String> {
     let listings: Vec<GameListing> = db::read_listings();
 
@@ -203,6 +208,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                             app.games.previous();
                         }
                         KeyCode::Enter => {
+                            //app.current_game = 
                             app.app_state = AppState::Dashboard;
                         }
 						_ => {}
@@ -211,9 +217,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::Dashboard => {
+                
+                //TODO: a refactor is needed here, it's a bit confusing having game_data and then
+                // and app struct with some state -- make a clearer demarcation of responsibilities
                 let mut game_data = Game::default();
-                app.current_game = app.games.state.selected();
-                game_data.id = get_game_id(app.current_game.unwrap()).unwrap();
+                app.current_game_index = app.games.state.selected();
+                game_data.id = get_game_id(app.current_game_index.unwrap()).unwrap();
 	
                 terminal.draw(|frame| {ui::dashboard(frame, updates.clone(), &app).unwrap();})
 					.expect("failed to draw dashboard ui");
