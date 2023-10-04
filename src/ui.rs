@@ -176,6 +176,7 @@ pub fn dashboard<B: Backend> (
         // TODO: instead of unrapping like a pleb, pattern match here!
         // then also make sure to move the code that sets the current id in main, back to it's
         // original home (after the terminal draw)
+        // pattern matching here might not be necessary
         Span::from(crate::get_game_name(app.current_game_index.unwrap()).unwrap())]
     );
 

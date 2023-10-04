@@ -52,22 +52,36 @@ impl Default for App<'_> {
 }
 
 #[derive(Debug)]
-pub struct Game {
+pub struct ParsedGame {
 	pub date: String,
-	pub name: String,
-	pub id: String,
 	pub players: Vec<Player>,
 }
 
-impl Default for Game {
-	fn default() -> Game {
-		Game {
+impl Default for ParsedGame {
+	fn default() -> Self {
+		ParsedGame {
 			date: String::new(),
-			name: String::new(),
-			id: String::new(),
 			players: Vec::new(),
 		}
 	}
+}
+
+struct Game {
+    parsed_game: ParsedGame,
+    years_elapsed_this_session: u16,
+    name: String,
+    id: String,
+}
+
+impl Default for Game {
+    fn default() -> Self {
+        Game {
+            parsed_game: ParsedGame::default(),
+            years_elapsed_this_session: 0,
+            name: String::new(),
+            id: String::new(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -100,16 +114,6 @@ impl Serialize for Player {
 	}
 }
 
-
-// press "enter" on an item to enter the dashboard
-// display, as list, each time an update is sent
-// include time sent && which year was sent.
-
-// maybe include an options page?
-//
-// maybe include a welcome page?
-//
-// 
 
 //TODO: this should be in db i think
 fn create_gamelisting(name: String) {
@@ -220,9 +224,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                 
                 //TODO: a refactor is needed here, it's a bit confusing having game_data and then
                 // and app struct with some state -- make a clearer demarcation of responsibilities
-                let mut game_data = Game::default();
+                //
+                // 
+                let mut parsed_data = ParsedGame::default();
                 app.current_game_index = app.games.state.selected();
-                game_data.id = get_game_id(app.current_game_index.unwrap()).unwrap();
+                //TODO: pattern match here
+                parsed_data.id = get_game_id(app.current_game_index.unwrap()).unwrap();
 	
                 terminal.draw(|frame| {ui::dashboard(frame, updates.clone(), &app).unwrap();})
 					.expect("failed to draw dashboard ui");
@@ -265,11 +272,11 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                     fs::write("last_metadata.txt", latest_time.clone())
                         .expect("failed to write time last modified to file");
 
-                    parser::parse(&filepath, &mut game_data);
-                    writeln!(stderr(), "{:?}", game_data);
-                    sender::send(&game_data);
+                    parser::parse(&filepath, &mut parsed_data);
+                    writeln!(stderr(), "{:?}", parsed_data);
+                    sender::send(&parsed_data);
                     
-                    updates.push(String::from("Sent update for year ".to_string() + &game_data.date + " at " + &latest_time));
+                    updates.push(String::from("Sent update for year ".to_string() + &parsed_data.date + " at " + &latest_time));
                 } else {
 
                     //TODO: if we press a key and happen to be sleeping in here, the program will
