@@ -5,7 +5,6 @@ use crossterm::{
 	execute,
 	terminal::{enable_raw_mode, EnterAlternateScreen},
 };
-use serde::{Deserialize, Serialize};
 use std::io;
 use tui::{
 	backend::{Backend, CrosstermBackend},
@@ -16,7 +15,6 @@ use tui::{
 	Frame, Terminal,
 };
 use unicode_width::UnicodeWidthStr;
-use uuid::Uuid;
 
 pub struct StatefulList<'a> {
 	pub state: ListState,
@@ -67,24 +65,6 @@ impl StatefulList<'_> {
 }
 
 // TODO: check if I can make the updated, created and uuid strs
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GameListing {
-	pub(crate) name: String,
-	pub(crate) time_created: String,
-	pub(crate) last_updated: String,
-	pub(crate) uuid: String,
-}
-
-impl GameListing {
-	pub fn new(name: String, time_created: String, last_updated: String, uuid: String) -> Self {
-		Self {
-			name,
-			time_created,
-			last_updated,
-			uuid,
-		}
-	}
-}
 
 pub fn gameselect(
 	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
@@ -177,7 +157,9 @@ pub fn dashboard<B: Backend> (
         // then also make sure to move the code that sets the current id in main, back to it's
         // original home (after the terminal draw)
         // pattern matching here might not be necessary
-        Span::from(crate::get_game_name(app.current_game_index.unwrap()).unwrap())]
+        Span::from(
+            app.current_game.as_ref().unwrap().name.clone()
+        )]
     );
 
     

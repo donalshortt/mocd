@@ -7,23 +7,22 @@ extern crate chrono;
 
 use crate::ui::StatefulList;
 use chrono::offset::Utc;
-use chrono::{DateTime, Local};
+use chrono::DateTime;
 use crossterm::event::{self, DisableMouseCapture, Event, KeyCode};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
+use db::create_gamelisting;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 use std::error::Error;
 use std::time::{Duration, Instant};
-use std::{fs, thread, time};
+use std::{fs, thread};
 use std::fs::*;
-use std::io::{self, stderr, Write};
-use std::io::Read;
+use std::io::{self, stderr, Write, Read};
 use std::path::{Path, PathBuf};
 use tui::widgets::ListItem;
-use ui::GameListing;
+use crate::db::GameListing;
 
-use uuid::Uuid;
 
 use tui::{backend::CrosstermBackend, Terminal};
 
@@ -36,16 +35,14 @@ enum AppState {
 pub struct App<'a> {
 	app_state: AppState,
 	games: StatefulList<'a>,
-    current_game_index: Option<usize>,
     current_game: Option<Game>
 }
 
 impl Default for App<'_> {
 	fn default() -> Self {
-		App {
+		Self {
 			app_state: AppState::GameSelect,
 			games: StatefulList::default(),
-            current_game_index: None,
             current_game: None,
 		}
 	}
@@ -59,7 +56,7 @@ pub struct ParsedGame {
 
 impl Default for ParsedGame {
 	fn default() -> Self {
-		ParsedGame {
+		Self {
 			date: String::new(),
 			players: Vec::new(),
 		}
@@ -114,25 +111,6 @@ impl Serialize for Player {
 	}
 }
 
-
-//TODO: this should be in db i think
-fn create_gamelisting(name: String) {
-	let current_date = Local::now().date_naive();
-
-	let listing = GameListing {
-		name,
-		time_created: current_date.to_string(),
-		last_updated: current_date.to_string(),
-		uuid: Uuid::new_v4().to_string(),
-	};
-
-	//TODO: is it really necessary to read and write here?
-	let mut listings = db::read_listings();
-	listings.push(listing);
-	db::write_listings(listings);
-}
-
-
 // TODO: make these both methods of Game? or do they make more sense as functions in DB?
 pub fn get_game_id(selected_index: usize) -> Option<String> {
     let listings: Vec<GameListing> = db::read_listings();
@@ -172,12 +150,10 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
     db::check_exists();
 	let mut app = App::default();
 	let mut user_input = String::new();
-    let mut updates : Vec<String> = Vec::new();
+    let mut dashboard_updates: Vec<String> = Vec::new();
     let mut last_time: String = String::new();
     let tick_rate = Duration::from_millis(250);
     let last_tick = Instant::now();
-
-    let mut counter = 0;
 
     let filepath = get_savefile_path();
 
@@ -188,14 +164,14 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
     }
 
     file = File::open("last_metadata.txt")
-        .expect("Unable to open file to read time of last metadata access");
+        .expect("failed to open file to read time of last metadata access");
     file.read_to_string(&mut last_time).unwrap();
 
 	loop {
 		match app.app_state {
 			AppState::GameSelect => {
 				ui::gameselect(terminal, &mut app)
-					.expect("unable to display game selection screen");
+					.expect("failed to display game selection screen");
 
 				if let Event::Key(key) = event::read()? {
 					match key.code {
@@ -212,7 +188,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
                             app.games.previous();
                         }
                         KeyCode::Enter => {
-                            //app.current_game = 
+                            app.current_game.unwrap().name = get_game_name(app.games.state.selected().unwrap()).unwrap();
+                            app.current_game.unwrap().id = get_game_id(app.games.state.selected().unwrap()).unwrap();
                             app.app_state = AppState::Dashboard;
                         }
 						_ => {}
@@ -221,18 +198,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::Dashboard => {
-                
-                //TODO: a refactor is needed here, it's a bit confusing having game_data and then
-                // and app struct with some state -- make a clearer demarcation of responsibilities
-                //
-                // 
-                let mut parsed_data = ParsedGame::default();
-                app.current_game_index = app.games.state.selected();
-                //TODO: pattern match here
-                parsed_data.id = get_game_id(app.current_game_index.unwrap()).unwrap();
-	
-                terminal.draw(|frame| {ui::dashboard(frame, updates.clone(), &app).unwrap();})
+                terminal.draw(|frame| {ui::dashboard(frame, dashboard_updates.clone(), &app).unwrap();})
 					.expect("failed to draw dashboard ui");
+
+                let mut parsed_data = ParsedGame::default();
+                //TODO: pattern match here
+	
 
                 // it seems that there is a buffer of inputs that get dealt with in a LIFO manner,
                 // as a result i can spam a bunch of input and then finally "q" and it will take
@@ -274,15 +245,15 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 
                     parser::parse(&filepath, &mut parsed_data);
                     writeln!(stderr(), "{:?}", parsed_data);
-                    sender::send(&parsed_data);
+                    sender::send(&app.current_game.expect("failed to find current game data to send"));
                     
-                    updates.push(String::from("Sent update for year ".to_string() + &parsed_data.date + " at " + &latest_time));
+                    dashboard_updates.push(String::from("Sent update for year ".to_string() + &parsed_data.date + " at " + &latest_time));
+
+                    app.current_game.unwrap().years_elapsed_this_session += 1;
                 } else {
 
                     //TODO: if we press a key and happen to be sleeping in here, the program will
                     //feel slow to respond
-                    updates.push(String::from("Look! An update: ".to_string() +  &counter.to_string()));
-                    counter += 1;
                     thread::sleep(Duration::from_secs(5));
                 }
 			}

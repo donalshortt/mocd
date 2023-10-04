@@ -4,7 +4,29 @@ use std::{
 	path::Path,
 };
 
-use crate::ui::GameListing;
+use chrono::Local;
+use serde::{Serialize, Deserialize};
+use uuid::Uuid;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GameListing {
+	pub(crate) name: String,
+	pub(crate) time_created: String,
+	pub(crate) last_updated: String,
+	pub(crate) uuid: String,
+}
+
+impl GameListing {
+	pub fn new(name: String, time_created: String, last_updated: String, uuid: String) -> Self {
+		Self {
+			name,
+			time_created,
+			last_updated,
+			uuid,
+		}
+	}
+}
+
 
 pub fn check_exists() {
 	if Path::new("db.json").exists() {
@@ -52,4 +74,20 @@ pub fn write_listings(listings: Vec<GameListing>) {
 		.expect("failed to open db");
 
 	serde_json::to_writer_pretty(&mut file, &listings).expect("failed to write to db");
+}
+
+pub fn create_gamelisting(name: String) {
+	let current_date = Local::now().date_naive();
+
+	let listing = GameListing {
+		name,
+		time_created: current_date.to_string(),
+		last_updated: current_date.to_string(),
+		uuid: Uuid::new_v4().to_string(),
+	};
+
+	//TODO: is it really necessary to read and write here?
+	let mut listings = read_listings();
+	listings.push(listing);
+	write_listings(listings);
 }

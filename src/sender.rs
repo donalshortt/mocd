@@ -1,21 +1,21 @@
 use reqwest::header::CONTENT_TYPE;
 use serde_json::{json, Value};
 
-use crate::ParsedGame;
+use crate::Game;
 
 // TODO: derive serialize?
-fn to_json(game_data: &ParsedGame) -> Value {
+fn to_json(game_data: &Game) -> Value {
 	let json = json!({
-		"date": game_data.date,
+		"date": game_data.parsed_game.date,
 		"name": game_data.name,
 		"id": game_data.id,
-		"players": game_data.players
+		"players": game_data.parsed_game.players
 	});
 
 	json
 }
 
-pub fn send(game_data: &ParsedGame) {
+pub fn send(game_data: &Game) {
 	let json = to_json(&game_data);
 
 	let client = reqwest::blocking::Client::new();
