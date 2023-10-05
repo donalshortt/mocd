@@ -84,11 +84,7 @@ pub fn gameselect(
 	Ok(())
 }
 
-pub fn newgame<B: Backend> (
-	frame: &mut Frame<B>,
-	app: &mut App,
-	user_input: &String,
-) -> Result<(), io::Error> {
+pub fn newgame<B: Backend>(frame: &mut Frame<B>, user_input: &String) -> Result<(), io::Error> {
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)
 		.margin(2)
@@ -128,75 +124,60 @@ pub fn newgame<B: Backend> (
 	Ok(())
 }
 
-pub fn dashboard<B: Backend> (
+pub fn dashboard<B: Backend>(
 	frame: &mut Frame<B>,
 	mut updates: Vec<String>,
-    app: &App
+	app: &App,
 ) -> Result<(), io::Error> {
+	let chunks = Layout::default()
+		.direction(Direction::Vertical)
+		.margin(2)
+		.constraints([Constraint::Length(5), Constraint::Min(1)].as_ref())
+		.split(frame.size());
+	// TODO: have a info box displayed at the time: the game name basically
 
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(2)
-        .constraints(
-            [
-                Constraint::Length(5),
-                Constraint::Min(1),
-            ]
-            .as_ref()
-        )
-        .split(frame.size());
-    // TODO: have a info box displayed at the time: the game name basically
-    
-    let banner = Block::default()
-        .title("Overview")
-        .borders(Borders::ALL);
+	let banner = Block::default().title("Overview").borders(Borders::ALL);
 
-    let name = Spans::from(vec![
-        Span::styled("Game name: ", Style::default().add_modifier(Modifier::BOLD)),
-        // TODO: instead of unrapping like a pleb, pattern match here!
-        // then also make sure to move the code that sets the current id in main, back to it's
-        // original home (after the terminal draw)
-        // pattern matching here might not be necessary
-        Span::from(
-            app.current_game.as_ref().unwrap().name.clone()
-        )]
-    );
+	let name = Spans::from(vec![
+		Span::styled("Game name: ", Style::default().add_modifier(Modifier::BOLD)),
+		// TODO: instead of unrapping like a pleb, pattern match here!
+		// then also make sure to move the code that sets the current id in main, back to it's
+		// original home (after the terminal draw)
+		// pattern matching here might not be necessary
+		Span::from(app.current_game.as_ref().unwrap().name.clone()),
+	]);
 
-    
+	let text = Paragraph::new(vec![name]).block(banner);
+	frame.render_widget(text, chunks[0]);
 
-    let text = Paragraph::new(vec![name]).block(banner);
-    frame.render_widget(text, chunks[0]);
+	// in the unlikely event that this program runs for 1000 years and our list gets very big, this
+	// rotating log has got us covered
+	let list_item_height = 4;
+	let max_displayable_items = chunks[1].height / list_item_height;
 
-    
-    // in the unlikely event that this program runs for 1000 years and our list gets very big, this
-    // rotating log has got us covered
-    let list_item_height = 4;
-    let max_displayable_items = chunks[1].height / list_item_height;
+	if &updates.len() > &(max_displayable_items as usize) {
+		updates.remove(0);
+	}
 
-    if &updates.len() > &(max_displayable_items as usize) {
-        updates.remove(0);
-    }
+	let pretty_updates: Vec<ListItem> = updates
+		.iter()
+		.rev()
+		.map(|update| {
+			let header = Spans::from(Span::styled(
+				format!("{:<9}", "INFO"),
+				Style::default().fg(Color::Blue),
+			));
+			//let body = Spans::from("wowee");
+			let body = Spans::from(update.clone());
 
-    let pretty_updates: Vec<ListItem> = 
-        updates
-        .iter()
-        .rev()
-        .map(|update|{
-            
-            let header = Spans::from(
-                Span::styled(format!("{:<9}", "INFO"), Style::default().fg(Color::Blue))
-            );
-            //let body = Spans::from("wowee");
-            let body = Spans::from(update.clone());
-
-            ListItem::new(vec![
-                Spans::from("-".repeat(chunks[1].width as usize)),
-                header,
-                Spans::from(""),
-                body
-            ])
-        })
-        .collect();
+			ListItem::new(vec![
+				Spans::from("-".repeat(chunks[1].width as usize)),
+				header,
+				Spans::from(""),
+				body,
+			])
+		})
+		.collect();
 
 	let list = List::new(pretty_updates)
 		.block(Block::default().title("Updates").borders(Borders::ALL))

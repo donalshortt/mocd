@@ -5,7 +5,7 @@ use std::{
 };
 
 use chrono::Local;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -26,7 +26,6 @@ impl GameListing {
 		}
 	}
 }
-
 
 pub fn check_exists() {
 	if Path::new("db.json").exists() {
