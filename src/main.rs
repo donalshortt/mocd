@@ -47,7 +47,7 @@ impl Default for App<'_> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedGame {
 	pub date: String,
 	pub players: Vec<Player>,
@@ -62,6 +62,7 @@ impl Default for ParsedGame {
 	}
 }
 
+#[derive(Debug)]
 pub struct Game {
 	parsed_game: ParsedGame,
 	years_elapsed_this_session: u16,
@@ -80,7 +81,7 @@ impl Default for Game {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Player {
 	pub igns: Vec<String>,
 	pub tag: String,
@@ -209,6 +210,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::Dashboard => {
+                //dbg!(&app.current_game);
+
 				terminal
 					.draw(|frame| {
 						ui::dashboard(frame, dashboard_updates.clone(), &app).unwrap();
@@ -255,12 +258,18 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 					fs::write("last_metadata.txt", latest_time.clone())
 						.expect("failed to write time last modified to file");
 
+                    dbg!("First");
+                    dbg!(&app.current_game);
 					parser::parse(&filepath, &mut parsed_data);
+                    dbg!("Second");
+                    dbg!(&app.current_game);
 					sender::send(
 						&app.current_game
 							.as_ref()
 							.expect("failed to find current game data to send"),
 					);
+
+                    app.current_game.as_mut().unwrap().parsed_game = parsed_data.clone();
 
 					dashboard_updates.push(String::from(
 						"Sent update for year ".to_string()
