@@ -132,7 +132,7 @@ pub fn dashboard<B: Backend>(
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)
 		.margin(2)
-		.constraints([Constraint::Length(5), Constraint::Min(1)].as_ref())
+		.constraints([Constraint::Length(7), Constraint::Min(1)].as_ref())
 		.split(frame.size());
 	// TODO: have a info box displayed at the time: the game name basically
 
@@ -140,14 +140,30 @@ pub fn dashboard<B: Backend>(
 
 	let name = Spans::from(vec![
 		Span::styled("Game name: ", Style::default().add_modifier(Modifier::BOLD)),
-		// TODO: instead of unrapping like a pleb, pattern match here!
-		// then also make sure to move the code that sets the current id in main, back to it's
-		// original home (after the terminal draw)
-		// pattern matching here might not be necessary
 		Span::from(app.current_game.as_ref().unwrap().name.clone()),
 	]);
 
-	let text = Paragraph::new(vec![name]).block(banner);
+    let year = Spans::from(vec![
+       Span::styled("Year: " , Style::default().add_modifier(Modifier::BOLD)),
+       Span::from(app.current_game.as_ref().unwrap().parsed_game.date.clone()),
+    ]);
+
+    let years_elapsed = Spans::from(vec![
+       Span::styled("Years elapsed this session: " , Style::default().add_modifier(Modifier::BOLD)),
+       Span::from(app.current_game.as_ref().unwrap().years_elapsed_this_session.to_string()),
+    ]);
+
+    let player_count = Spans::from(vec![
+       Span::styled("Player count: " , Style::default().add_modifier(Modifier::BOLD)),
+       Span::from(app.current_game.as_ref().unwrap().parsed_game.players.len().to_string()),
+    ]);
+
+    let id = Spans::from(vec![
+       Span::styled("ID: " , Style::default().add_modifier(Modifier::BOLD)),
+       Span::from(app.current_game.as_ref().unwrap().id.clone()),
+    ]);
+
+	let text = Paragraph::new(vec![name, year, years_elapsed, player_count, id]).block(banner);
 	frame.render_widget(text, chunks[0]);
 
 	// in the unlikely event that this program runs for 1000 years and our list gets very big, this
