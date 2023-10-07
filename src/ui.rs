@@ -143,25 +143,45 @@ pub fn dashboard<B: Backend>(
 		Span::from(app.current_game.as_ref().unwrap().name.clone()),
 	]);
 
-    let year = Spans::from(vec![
-       Span::styled("Year: " , Style::default().add_modifier(Modifier::BOLD)),
-       Span::from(app.current_game.as_ref().unwrap().parsed_game.date.clone()),
-    ]);
+	let year = Spans::from(vec![
+		Span::styled("Year: ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::from(app.current_game.as_ref().unwrap().parsed_game.date.clone()),
+	]);
 
-    let years_elapsed = Spans::from(vec![
-       Span::styled("Years elapsed this session: " , Style::default().add_modifier(Modifier::BOLD)),
-       Span::from(app.current_game.as_ref().unwrap().years_elapsed_this_session.to_string()),
-    ]);
+	let years_elapsed = Spans::from(vec![
+		Span::styled(
+			"Years elapsed this session: ",
+			Style::default().add_modifier(Modifier::BOLD),
+		),
+		Span::from(
+			app.current_game
+				.as_ref()
+				.unwrap()
+				.years_elapsed_this_session
+				.to_string(),
+		),
+	]);
 
-    let player_count = Spans::from(vec![
-       Span::styled("Player count: " , Style::default().add_modifier(Modifier::BOLD)),
-       Span::from(app.current_game.as_ref().unwrap().parsed_game.players.len().to_string()),
-    ]);
+	let player_count = Spans::from(vec![
+		Span::styled(
+			"Player count: ",
+			Style::default().add_modifier(Modifier::BOLD),
+		),
+		Span::from(
+			app.current_game
+				.as_ref()
+				.unwrap()
+				.parsed_game
+				.players
+				.len()
+				.to_string(),
+		),
+	]);
 
-    let id = Spans::from(vec![
-       Span::styled("ID: " , Style::default().add_modifier(Modifier::BOLD)),
-       Span::from(app.current_game.as_ref().unwrap().id.clone()),
-    ]);
+	let id = Spans::from(vec![
+		Span::styled("ID: ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::from(app.current_game.as_ref().unwrap().id.clone()),
+	]);
 
 	let text = Paragraph::new(vec![name, year, years_elapsed, player_count, id]).block(banner);
 	frame.render_widget(text, chunks[0]);

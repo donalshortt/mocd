@@ -9,7 +9,7 @@ use crate::db::GameListing;
 use crate::ui::StatefulList;
 use chrono::offset::Utc;
 use chrono::DateTime;
-use crossterm::event::{self, DisableMouseCapture, Event, KeyCode};
+use crossterm::event::{self, DisableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use db::create_gamelisting;
@@ -135,7 +135,7 @@ pub fn get_game_name(selected_index: usize) -> Option<String> {
 fn get_savefile_path() -> PathBuf {
 	#[cfg(target_os = "windows")]
 	{
-		return PathBuf::from("C:\\Users\\donal\\Documents\\Paradox Interactive\\Europa Universalis\\save games\\autosave");
+		return PathBuf::from("C:\\Users\\donal\\Documents\\Paradox Interactive\\Europa Universalis IV\\save games\\autosave");
 	}
 
 	#[cfg(target_os = "linux")]
@@ -154,7 +154,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 	let tick_rate = Duration::from_millis(250);
 	let last_tick = Instant::now();
 
-	let filepath = get_savefile_path();
+	let savefile_filepath = get_savefile_path();
 
 	let mut file: File;
 	if !Path::new("last_metadata.txt").exists() {
@@ -172,8 +172,13 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 				ui::gameselect(terminal, &mut app)
 					.expect("failed to display game selection screen");
 
-				if let Event::Key(key) = event::read()? {
-					match key.code {
+				if let Event::Key(KeyEvent {
+					code,
+					kind: KeyEventKind::Press,
+					..
+				}) = event::read()?
+				{
+					match code {
 						KeyCode::Char('q') => {
 							return Ok(());
 						}
@@ -210,7 +215,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 			}
 
 			AppState::Dashboard => {
-                //dbg!(&app.current_game);
+				//dbg!(&app.current_game);
 
 				terminal
 					.draw(|frame| {
@@ -228,8 +233,13 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 					.checked_sub(last_tick.elapsed())
 					.unwrap_or_else(|| Duration::from_secs(0));
 				if crossterm::event::poll(timeout).unwrap() {
-					if let Event::Key(key) = event::read()? {
-						match key.code {
+					if let Event::Key(KeyEvent {
+						code,
+						kind: KeyEventKind::Press,
+						..
+					}) = event::read()?
+					{
+						match code {
 							KeyCode::Char('q') => {
 								return Ok(());
 							}
@@ -245,7 +255,9 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 				// we use a file and not just some var in case the program crashes, again because
 				// if we sent a duplicate update by accident, remedying this would be annoying
 
-				let latest_metadata = fs::metadata(&filepath)
+                //dbg!(&savefile_filepath);
+                
+				let latest_metadata = fs::metadata(&savefile_filepath)
 					.expect("Couldn't get metadata from savefile")
 					.modified()
 					.expect("Couldn't get time modified from metadata");
@@ -258,18 +270,14 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 					fs::write("last_metadata.txt", latest_time.clone())
 						.expect("failed to write time last modified to file");
 
-                    dbg!("First");
-                    dbg!(&app.current_game);
-					parser::parse(&filepath, &mut parsed_data);
-                    dbg!("Second");
-                    dbg!(&app.current_game);
+					parser::parse(&savefile_filepath, &mut parsed_data);
 					sender::send(
 						&app.current_game
 							.as_ref()
 							.expect("failed to find current game data to send"),
 					);
 
-                    app.current_game.as_mut().unwrap().parsed_game = parsed_data.clone();
+					app.current_game.as_mut().unwrap().parsed_game = parsed_data.clone();
 
 					dashboard_updates.push(String::from(
 						"Sent update for year ".to_string()
@@ -301,8 +309,13 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 					})
 					.expect("failed to draw newgame ui");
 
-				if let Event::Key(key) = event::read()? {
-					match key.code {
+				if let Event::Key(KeyEvent {
+					code,
+					kind: KeyEventKind::Press,
+					..
+				}) = event::read()?
+				{
+					match code {
 						KeyCode::Enter => {
 							create_gamelisting(user_input.drain(..).collect());
 							app.games.items = db::read_games()
