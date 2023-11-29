@@ -140,7 +140,7 @@ fn get_savefile_path() -> PathBuf {
 
 	#[cfg(target_os = "linux")]
 	{
-		return PathBuf::from("/home/donal/projects/moc/mocp/saves/mp_autosave.eu4");
+		return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4");
 	}
 }
 
