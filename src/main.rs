@@ -140,7 +140,7 @@ fn get_savefile_path() -> PathBuf {
 
 	#[cfg(target_os = "linux")]
 	{
-		return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4");
+		return PathBuf::from("/home/donal/projects/moc/mocp/saves/mp_autosave.eu4");
 	}
 }
 
@@ -264,6 +264,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 				let latest_datetime: DateTime<Utc> = latest_metadata.into();
 				let latest_time = latest_datetime.format("%T").to_string();
 
+                //dbg!(&latest_metadata);
+
 				if latest_time != last_time {
 					// write to file instead of this variable
 					last_time = latest_time.clone();
@@ -291,7 +293,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 				} else {
 					//TODO: if we press a key and happen to be sleeping in here, the program will
 					//feel slow to respond
-					thread::sleep(Duration::from_secs(5));
+					thread::sleep(Duration::from_secs(1));
 				}
 			}
 
