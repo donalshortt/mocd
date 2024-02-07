@@ -273,13 +273,13 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 						.expect("failed to write time last modified to file");
 
 					parser::parse(&savefile_filepath, &mut parsed_data);
+					app.current_game.as_mut().unwrap().parsed_game = parsed_data.clone();
+
 					sender::send(
 						&app.current_game
 							.as_ref()
 							.expect("failed to find current game data to send"),
 					);
-
-					app.current_game.as_mut().unwrap().parsed_game = parsed_data.clone();
 
 					dashboard_updates.push(String::from(
 						"Sent update for year ".to_string()
