@@ -141,6 +141,7 @@ fn get_savefile_path() -> PathBuf {
 	#[cfg(target_os = "linux")]
 	{
 		return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4");
+        //return PathBuf::from("/home/donal/.local/share/Paradox Interactive/Europa Universalis IV/save games/autosave.eu4");
 	}
 }
 
@@ -169,8 +170,14 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 	loop {
 		match app.app_state {
 			AppState::GameSelect => {
-				ui::gameselect(terminal, &mut app)
-					.expect("failed to display game selection screen");
+				//ui::gameselect(terminal, &mut app)
+					//.expect("failed to display game selection screen");
+
+				terminal
+					.draw(|frame| {
+						ui::gameselect(frame, &mut app).unwrap();
+					})
+					.expect("failed to draw gameselect ui");
 
 				if let Event::Key(KeyEvent {
 					code,

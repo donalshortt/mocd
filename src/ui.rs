@@ -58,7 +58,7 @@ impl StatefulList<'_> {
 					i - 1
 				}
 			}
-			None => 0,
+	    	None => 0,
 		};
 		self.state.select(Some(i));
 	}
@@ -66,20 +66,46 @@ impl StatefulList<'_> {
 
 // TODO: check if I can make the updated, created and uuid strs
 
-pub fn gameselect(
-	terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+pub fn gameselect<B: Backend> (
+	frame: &mut Frame<B>,
 	app: &mut App,
 ) -> Result<(), io::Error> {
+	let chunks = Layout::default()
+		.direction(Direction::Vertical)
+		.margin(2)
+		.constraints(
+			[
+				Constraint::Length(1),
+				Constraint::Min(1),
+			]
+			.as_ref(),
+		)
+		.split(frame.size());
+	// Prepare and render the help message
+	let msg = vec![
+		Span::raw("Select a game with"),
+		Span::styled(" up arrow ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("or"),
+		Span::styled(" down arrow", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw(". Press"),
+		Span::styled(" c ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("to create a new game. Press"),
+		Span::styled(" q ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("to quit."),
+	];
+
+	let mut text = Text::from(Spans::from(msg));
+	text.patch_style(Style::default());
+	let info_message = Paragraph::new(text);
+	frame.render_widget(info_message, chunks[0]);
+
 	let list = List::new(&*app.games.items)
 		.block(Block::default().title("List").borders(Borders::ALL))
 		.style(Style::default().fg(Color::White))
 		.highlight_style(Style::default().add_modifier(Modifier::ITALIC))
 		.highlight_symbol(">>");
 
-	terminal.draw(|f| {
-		let size = f.size();
-		f.render_stateful_widget(list, size, &mut app.games.state);
-	})?;
+	frame.render_stateful_widget(list, chunks[1], &mut app.games.state);
 
 	Ok(())
 }
@@ -98,7 +124,7 @@ pub fn newgame<B: Backend>(frame: &mut Frame<B>, user_input: &String) -> Result<
 		)
 		.split(frame.size());
 
-	// prepare and render the help message
+	// Prepare and render the help message
 	let msg = vec![
 		Span::raw("Create a game, press "),
 		Span::styled("Esc", Style::default().add_modifier(Modifier::BOLD)),
@@ -110,7 +136,7 @@ pub fn newgame<B: Backend>(frame: &mut Frame<B>, user_input: &String) -> Result<
 	let info_message = Paragraph::new(text);
 	frame.render_widget(info_message, chunks[0]);
 
-	// prepare and render the input box
+	// Prepare and render the input box
 	let input = Paragraph::new(user_input.as_ref())
 		.style(Style::default())
 		.block(Block::default().borders(Borders::ALL).title("Input"));
@@ -125,16 +151,27 @@ pub fn newgame<B: Backend>(frame: &mut Frame<B>, user_input: &String) -> Result<
 }
 
 pub fn dashboard<B: Backend>(
-	frame: &mut Frame<B>,
-	mut updates: Vec<String>,
-	app: &App,
-) -> Result<(), io::Error> {
+    frame: &mut Frame<B>, 
+    mut updates: 
+    Vec<String>, app: &App,
+    ) -> Result<(), io::Error> {
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)
 		.margin(2)
-		.constraints([Constraint::Length(7), Constraint::Min(1)].as_ref())
+		.constraints([Constraint::Length(1), Constraint::Length(7), Constraint::Min(1)].as_ref())
 		.split(frame.size());
-	// TODO: have a info box displayed at the time: the game name basically
+    
+	// Prepare and render the help message
+	let msg = vec![
+		Span::raw("Press"),
+		Span::styled(" q ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("to quit."),
+	];
+
+	let mut text = Text::from(Spans::from(msg));
+	text.patch_style(Style::default());
+	let info_message = Paragraph::new(text);
+	frame.render_widget(info_message, chunks[0]);
 
 	let banner = Block::default().title("Overview").borders(Borders::ALL);
 
@@ -184,7 +221,7 @@ pub fn dashboard<B: Backend>(
 	]);
 
 	let text = Paragraph::new(vec![name, year, years_elapsed, player_count, id]).block(banner);
-	frame.render_widget(text, chunks[0]);
+	frame.render_widget(text, chunks[1]);
 
 	// in the unlikely event that this program runs for 1000 years and our list gets very big, this
 	// rotating log has got us covered
@@ -203,7 +240,6 @@ pub fn dashboard<B: Backend>(
 				format!("{:<9}", "INFO"),
 				Style::default().fg(Color::Blue),
 			));
-			//let body = Spans::from("wowee");
 			let body = Spans::from(update.clone());
 
 			ListItem::new(vec![
@@ -219,7 +255,7 @@ pub fn dashboard<B: Backend>(
 		.block(Block::default().title("Updates").borders(Borders::ALL))
 		.style(Style::default().fg(Color::White));
 
-	frame.render_widget(list, chunks[1]);
+	frame.render_widget(list, chunks[2]);
 
 	Ok(())
 }
