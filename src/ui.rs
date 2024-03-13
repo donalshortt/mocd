@@ -25,7 +25,7 @@ impl Default for StatefulList<'_> {
 	fn default() -> Self {
 		StatefulList {
 			state: ListState::default(),
-			//TODO: create a function to get the list items from a datafile
+			// TODO: create a function to get the list items from a datafile
 			items: db::read_games()
 				.iter()
 				.map(|s| ListItem::new(s.to_string()))
@@ -62,6 +62,11 @@ impl StatefulList<'_> {
 		};
 		self.state.select(Some(i));
 	}
+}
+
+pub enum Setting {
+    IP,
+    Filepath
 }
 
 // TODO: check if I can make the updated, created and uuid strs
@@ -258,6 +263,99 @@ pub fn dashboard<B: Backend>(
 	frame.render_widget(list, chunks[2]);
 
 	Ok(())
+}
+
+
+pub fn settings<B: Backend>(frame: &mut Frame<B>, app: &App, current_setting: &Setting) -> Result<(), io::Error> {
+	let chunks = Layout::default()
+		.direction(Direction::Vertical)
+		.margin(2)
+		.constraints(
+			[
+				Constraint::Length(1), // screen tooltip
+                Constraint::Length(3), // spacer
+                Constraint::Length(1), // ip tooltip
+				Constraint::Length(3), // ip box
+				Constraint::Length(2), // spacer
+				Constraint::Length(1), // filepath tooltip
+				Constraint::Length(3), // filepath box
+                Constraint::Max(1),    // spacer
+			]
+			.as_ref(),
+		)
+		.split(frame.size());
+
+	// Prepare and render the help message
+	let mut msg = vec![
+		Span::raw("Press"),
+		Span::styled(" Tab ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("to select settings. Press"),
+		Span::styled(" Esc ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("to go back."),
+	];
+
+	let mut text = Text::from(Spans::from(msg));
+	text.patch_style(Style::default());
+	let info_message = Paragraph::new(text);
+	frame.render_widget(info_message, chunks[0]);
+
+	let blank = Block::default().style(Style::default());
+	frame.render_widget(blank.clone(), chunks[1]);
+
+    msg = vec![
+        Span::raw("Current IP: "),
+		Span::styled(app.webserver_ip.to_string(), Style::default().add_modifier(Modifier::BOLD)),
+    ];
+
+	text = Text::from(Spans::from(msg));
+	text.patch_style(Style::default());
+	let info_message = Paragraph::new(text);
+	frame.render_widget(info_message, chunks[2]);
+
+    let mut input_content = if let Setting::IP = current_setting {
+        app.user_input.as_ref()
+    } else {
+        ""
+    };
+
+	// Prepare and render the input box
+	let input = Paragraph::new(input_content)
+		.style(Style::default())
+		.block(Block::default().borders(Borders::ALL).title("IP"));
+	frame.render_widget(input, chunks[3]);
+
+	frame.render_widget(blank.clone(), chunks[4]);
+
+    msg = vec![
+        Span::raw("Current filepath: "),
+		Span::styled(app.savefile_filepath.to_str().unwrap(), Style::default().add_modifier(Modifier::BOLD)),
+    ];
+
+	text = Text::from(Spans::from(msg));
+	text.patch_style(Style::default());
+	let info_message = Paragraph::new(text);
+	frame.render_widget(info_message, chunks[5]);
+
+    input_content = if let Setting::Filepath = current_setting {
+        app.user_input.as_ref()
+    } else {
+        ""
+    };
+
+	// Prepare and render the input box
+	let input = Paragraph::new(input_content)
+		.style(Style::default())
+		.block(Block::default().borders(Borders::ALL).title("IP"));
+	frame.render_widget(input, chunks[6]);
+
+    frame.render_widget(blank, chunks[7]);
+
+    match current_setting {
+        Setting::IP => frame.set_cursor(chunks[3].x + app.user_input.width() as u16 + 1, chunks[3].y + 1),
+        Setting::Filepath => frame.set_cursor(chunks[6].x + app.user_input.width() as u16 + 1, chunks[6].y + 1),
+    }
+
+    Ok(())
 }
 
 pub fn ui_setup() -> Result<Terminal<CrosstermBackend<io::Stdout>>, io::Error> {

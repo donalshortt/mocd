@@ -16,17 +16,6 @@ pub struct GameListing {
 	pub(crate) uuid: String,
 }
 
-impl GameListing {
-	pub fn new(name: String, time_created: String, last_updated: String, uuid: String) -> Self {
-		Self {
-			name,
-			time_created,
-			last_updated,
-			uuid,
-		}
-	}
-}
-
 pub fn check_exists() {
 	if Path::new("db.json").exists() {
 		return;
