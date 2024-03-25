@@ -263,10 +263,13 @@ fn run_dashboard(
         {
             match code {
                 KeyCode::Char('q') => {
-                    return Ok(());
+                    app.app_state = AppState::Quitting;
                 }
                 KeyCode::Char('s') => {
                     app.app_state = AppState::Settings;
+                }
+                KeyCode::Esc => {
+                    app.app_state = AppState::GameSelect;
                 }
                 _ => {}
             }

@@ -169,6 +169,12 @@ pub fn dashboard<B: Backend>(
 	// Prepare and render the help message
 	let msg = vec![
 		Span::raw("Press"),
+		Span::styled(" s ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("for settings."),
+		Span::raw("Press"),
+		Span::styled(" Esc ", Style::default().add_modifier(Modifier::BOLD)),
+		Span::raw("to go back."),
+		Span::raw("Press"),
 		Span::styled(" q ", Style::default().add_modifier(Modifier::BOLD)),
 		Span::raw("to quit."),
 	];
