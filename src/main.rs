@@ -175,8 +175,8 @@ fn get_savefile_path() -> PathBuf {
 
 	#[cfg(target_os = "linux")]
 	{
-		return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4");
-        //return PathBuf::from("/home/donal/.local/share/Paradox Interactive/Europa Universalis IV/save games/autosave.eu4");
+		//return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4");
+        return PathBuf::from("/home/donal/.local/share/Paradox Interactive/Europa Universalis IV/save games/mp_autosave.eu4");
 	}
 }
 

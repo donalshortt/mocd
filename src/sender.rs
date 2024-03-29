@@ -20,9 +20,8 @@ fn to_json(game_data: &Game) -> Value {
 pub fn send(app: &App) {
 	let json = to_json(app.current_game.as_ref().unwrap());
     let mut url: String = String::new();
-    let port = 80;
+    let port = 8080;
     let endpoint = "/api/game_data";
-
 
     write!(&mut url, "http://{}:{}{}", app.webserver_ip, port, endpoint).expect("failed to create url for webserver");
 
