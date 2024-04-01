@@ -4,16 +4,6 @@ use std::path::{Path, PathBuf};
 
 use crate::{ParsedGame, Player};
 
-fn player_exists(tag: &String, game_data: &ParsedGame) -> bool {
-	for player in &game_data.players {
-		if player.tag.eq(tag) {
-			return true;
-		}
-	}
-
-	false
-}
-
 fn insert_country_data(buffer: &Vec<String>, game_data: &mut ParsedGame) {
 	// strips the whitespace from the raw input lines and groups each line in tags and igns
 	// TODO: figure out why this can't be a oneliner in it's current form
@@ -21,21 +11,11 @@ fn insert_country_data(buffer: &Vec<String>, game_data: &mut ParsedGame) {
 	let chunked_buf = stripped_buf.chunks(2);
 
 	for chunk in chunked_buf {
-		if !player_exists(&chunk[1], &game_data) {
-			game_data.players.push(Player {
-				igns: vec![chunk[0][1..chunk[0].len() - 1].to_string()],
-				tag: chunk[1].to_string(),
-				score: 0,
-			});
-		} else {
-			for player in &mut game_data.players {
-				if player.tag.eq(&chunk[1]) {
-					player
-						.igns
-						.push(chunk[0][1..chunk[0].len() - 1].to_string());
-				}
-			}
-		}
+        game_data.players.push(Player {
+            ign: chunk[0][1..chunk[0].len() - 1].to_string(),
+            tag: chunk[1].to_string(),
+            score: 0,
+        });
 	}
 }
 
@@ -95,11 +75,6 @@ pub fn parse(filepath: &PathBuf, game_data: &mut ParsedGame) {
 				let date_end = ip.find('.').unwrap_or(0);
 				game_data.date = ip[(date_start + 1)..date_end].to_string();
 			}
-
-			//if ip.contains("save_game") {
-			//if 	let name_start = ip.find('"').unwrap_or(0);
-			//if 	game_data.name = ip[(name_start + 1)..(ip.len() - 5)].to_string();
-			//if }
 
 			if reading_player_countries {
 				if ip.contains("}") && (ip.chars().count() == 1) {

@@ -118,7 +118,7 @@ impl Default for Game {
 
 #[derive(Debug, Clone)]
 pub struct Player {
-	pub igns: Vec<String>,
+	pub ign: String,
 	pub tag: String,
 	pub score: u32,
 }
@@ -126,7 +126,7 @@ pub struct Player {
 impl Default for Player {
 	fn default() -> Player {
 		Player {
-			igns: Vec::new(),
+			ign: String::new(),
 			tag: String::new(),
 			score: 0,
 		}
@@ -139,7 +139,7 @@ impl Serialize for Player {
 		S: Serializer,
 	{
 		let mut state = serializer.serialize_struct("player", 3)?;
-		state.serialize_field("igns", &self.igns)?;
+		state.serialize_field("ign", &self.ign)?;
 		state.serialize_field("tag", &self.tag[1..&self.tag.len() - 1])?;
 		state.serialize_field("score", &self.score)?;
 		state.end()
@@ -295,7 +295,7 @@ fn run_dashboard(
         sender::send(&app);
 
         app.dashboard_updates.push(String::from(
-            "Sent update for year ".to_string()
+            "Sent update as of year ".to_string()
                 + &parsed_data.date + " at " + &latest_time,
         ));
 
