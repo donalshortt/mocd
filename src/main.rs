@@ -170,13 +170,14 @@ pub fn get_game_name(selected_index: usize) -> Option<String> {
 fn get_savefile_path() -> PathBuf {
 	#[cfg(target_os = "windows")]
 	{
-		return PathBuf::from("C:\\Users\\donal\\Documents\\Paradox Interactive\\Europa Universalis IV\\save games\\autosave");
+        let path = format!("C:\\Users\\{}\\Documents\\Paradox Interactive\\Europa Universalis IV\\save games\\autosave", whoami::username());
+		return PathBuf::from(path);
 	}
 
 	#[cfg(target_os = "linux")]
 	{
-		//return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4");
-        return PathBuf::from("/home/donal/.local/share/Paradox Interactive/Europa Universalis IV/save games/mp_autosave.eu4");
+        let path = format!("/home/{}/.local/share/Paradox Interactive/Europa Universalis IV/save games/mp_autosave.eu4", whoami::username());
+        return PathBuf::from(path);
 	}
 }
 

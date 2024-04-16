@@ -14,3 +14,4 @@ tui = "0.19"
 crossterm = "0.27"
 uuid = { version = "1.4.1", features = ["v4", "fast-rng", "macro-diagnostics"] }
 unicode-width = "0.1.5"
+whoami = "1.5.1"

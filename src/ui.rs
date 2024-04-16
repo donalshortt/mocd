@@ -351,7 +351,7 @@ pub fn settings<B: Backend>(frame: &mut Frame<B>, app: &App, current_setting: &S
 	// Prepare and render the input box
 	let input = Paragraph::new(input_content)
 		.style(Style::default())
-		.block(Block::default().borders(Borders::ALL).title("IP"));
+		.block(Block::default().borders(Borders::ALL).title("Filepath"));
 	frame.render_widget(input, chunks[6]);
 
     frame.render_widget(blank, chunks[7]);
