@@ -33,15 +33,17 @@ use serde::{
     Serialize,
     Serializer,
 };
+use ui::Update;
 
 use std::{
-    error::Error,
-    fs::*,
-    io::{self, Read},
-    path::{Path, PathBuf},
-    time::{Duration, Instant},
-    thread,
-    net::Ipv4Addr
+    error::Error, 
+    fs::*, 
+    io::{self, Read, ErrorKind}, 
+    net::Ipv4Addr, 
+    panic::{catch_unwind, AssertUnwindSafe}, 
+    path::{Path, PathBuf}, 
+    thread, 
+    time::{Duration, Instant}
 };
 
 use tui::{
@@ -62,7 +64,7 @@ pub struct App<'a> {
 	app_state: AppState,
 	games: StatefulList<'a>,
 	current_game: Option<Game>,
-    dashboard_updates: Vec<String>,
+    dashboard_updates: Vec<Update>,
     user_input: String,
     savefile_filepath: PathBuf,
     webserver_ip: Ipv4Addr,
@@ -168,16 +170,19 @@ pub fn get_game_name(selected_index: usize) -> Option<String> {
 }
 
 fn get_savefile_path() -> PathBuf {
-	#[cfg(target_os = "windows")]
+	let path;
+
+    #[cfg(target_os = "windows")]
 	{
-		return PathBuf::from("C:\\Users\\donal\\Documents\\Paradox Interactive\\Europa Universalis IV\\save games\\autosave");
+        path = format!("C:\\Users\\{}\\Documents\\Paradox Interactive\\Europa Universalis IV\\save games\\autosave", whoami::username());
+	}
+	
+    #[cfg(target_os = "linux")]
+	{
+        path = format!("/home/{}/.local/share/Paradox Interactive/Europa Universalis IV/save games/mp_autosave.eu4", whoami::username());
 	}
 
-	#[cfg(target_os = "linux")]
-	{
-		//return PathBuf::from("/home/donal/projects/mocp/saves/mp_autosave.eu4");
-        return PathBuf::from("/home/donal/.local/share/Paradox Interactive/Europa Universalis IV/save games/mp_autosave.eu4");
-	}
+    return PathBuf::from(path);
 }
 
 fn run_gameselect(mut app: &mut App, terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
@@ -250,10 +255,10 @@ fn run_dashboard(
         .expect("failed to draw dashboard ui");
 
     let mut parsed_data = ParsedGame::default();
-
     let timeout = tick_rate
         .checked_sub(last_tick.elapsed())
         .unwrap_or_else(|| Duration::from_secs(0));
+
     if crossterm::event::poll(timeout).unwrap() {
         if let Event::Key(KeyEvent {
             code,
@@ -276,6 +281,13 @@ fn run_dashboard(
         }
     }
 
+    if !app.savefile_filepath.exists() {
+        update_savepath_invalid(app);
+        thread::sleep(Duration::from_secs(1));
+
+        return Ok(())
+    }
+
     let latest_metadata = metadata(&app.savefile_filepath)
         .expect("Couldn't get metadata from savefile")
         .modified()
@@ -294,10 +306,13 @@ fn run_dashboard(
 
         sender::send(&app);
 
-        app.dashboard_updates.push(String::from(
-            "Sent update as of year ".to_string()
-                + &parsed_data.date + " at " + &latest_time,
-        ));
+        let update = Update {
+            info: String::from("Sent update as of year ".to_string()
+            + &parsed_data.date + " at " + &latest_time),
+            class: ui::UpdateClass::Info,
+        };
+
+        app.dashboard_updates.push(update);
 
         app.current_game
             .as_mut()
@@ -347,6 +362,15 @@ fn run_newgame(app: &mut App, terminal: &mut Terminal<CrosstermBackend<io::Stdou
     Ok(())
 }
 
+fn update_savepath_invalid(app: &mut App) {
+    let update = Update {
+        info: String::from("Cannot find savefile"),
+        class: ui::UpdateClass::Warning,
+    };
+
+    app.dashboard_updates.push(update);
+}
+
 fn update_setting(app: &mut App, setting: &Setting) {
     match setting {
         Setting::IP => {
@@ -355,6 +379,10 @@ fn update_setting(app: &mut App, setting: &Setting) {
         }
         Setting::Filepath => {
             app.savefile_filepath = PathBuf::from(&app.user_input);
+
+            if !app.savefile_filepath.exists() {
+                update_savepath_invalid(app);
+            }
         }
     }
 }
@@ -416,20 +444,16 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 
 	loop {
 		match app.app_state {
-			AppState::GameSelect => { run_gameselect(&mut app, terminal); }
-			AppState::Dashboard => { run_dashboard(&mut app, terminal, &mut last_time); }
-			AppState::NewGame => { run_newgame(&mut app, terminal); }
-            AppState::Settings => { run_settings(&mut app, terminal, &mut current_setting); }
+			AppState::GameSelect => { run_gameselect(&mut app, terminal)?; }
+			AppState::Dashboard => { run_dashboard(&mut app, terminal, &mut last_time)?; }
+			AppState::NewGame => { run_newgame(&mut app, terminal)?; }
+            AppState::Settings => { run_settings(&mut app, terminal, &mut current_setting)?; }
             AppState::Quitting => { return Ok(()); }
 		}
 	}
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-	let mut terminal = ui::ui_setup().unwrap();
-
-	run_app(&mut terminal).expect("app crashed");
-
+fn cleanup(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 	disable_raw_mode()?;
 	execute!(
 		terminal.backend_mut(),
@@ -438,5 +462,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 	)?;
 	terminal.show_cursor()?;
 
-	Ok(())
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+	let mut terminal = ui::ui_setup().expect("Failed to setup UI");
+    
+    let _ = catch_unwind(AssertUnwindSafe(|| {
+        run_app(&mut terminal)
+    }));
+
+    cleanup(&mut terminal)?;
+    
+    Ok(())
 }

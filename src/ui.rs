@@ -16,6 +16,19 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
+#[derive(Clone)]
+pub enum UpdateClass {
+    Info,
+    Warning,
+    Error
+}
+
+#[derive(Clone)]
+pub struct Update {
+    pub info: String,
+    pub class: UpdateClass
+}
+
 pub struct StatefulList<'a> {
 	pub state: ListState,
 	pub items: Vec<ListItem<'a>>,
@@ -158,7 +171,7 @@ pub fn newgame<B: Backend>(frame: &mut Frame<B>, user_input: &String) -> Result<
 pub fn dashboard<B: Backend>(
     frame: &mut Frame<B>, 
     mut updates: 
-    Vec<String>, app: &App,
+    Vec<Update>, app: &App,
     ) -> Result<(), io::Error> {
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)
@@ -247,11 +260,31 @@ pub fn dashboard<B: Backend>(
 		.iter()
 		.rev()
 		.map(|update| {
-			let header = Spans::from(Span::styled(
-				format!("{:<9}", "INFO"),
-				Style::default().fg(Color::Blue),
-			));
-			let body = Spans::from(update.clone());
+            let header;
+            
+            match update.class {
+                UpdateClass::Info => {
+                    header = Spans::from(Span::styled(
+                        format!("{:<9}", "INFO"),
+                        Style::default().fg(Color::Blue),
+                    ));
+                }
+                UpdateClass::Warning => {
+                    header = Spans::from(Span::styled(
+                        format!("{:<9}", "WARNING"),
+                        Style::default().fg(Color::Yellow),
+                    ));
+                }
+                UpdateClass::Error => {
+                    header = Spans::from(Span::styled(
+                        format!("{:<9}", "ERROR"),
+                        Style::default().fg(Color::Red),
+                    ));
+                }
+
+            }
+
+			let body = Spans::from(update.info.clone());
 
 			ListItem::new(vec![
 				Spans::from("-".repeat(chunks[1].width as usize)),
@@ -351,7 +384,7 @@ pub fn settings<B: Backend>(frame: &mut Frame<B>, app: &App, current_setting: &S
 	// Prepare and render the input box
 	let input = Paragraph::new(input_content)
 		.style(Style::default())
-		.block(Block::default().borders(Borders::ALL).title("IP"));
+		.block(Block::default().borders(Borders::ALL).title("Filepath"));
 	frame.render_widget(input, chunks[6]);
 
     frame.render_widget(blank, chunks[7]);
