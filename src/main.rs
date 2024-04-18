@@ -41,7 +41,9 @@ use std::{
     path::{Path, PathBuf},
     time::{Duration, Instant},
     thread,
-    net::Ipv4Addr
+    net::Ipv4Addr,
+    panic,
+    sync::Mutex,
 };
 
 use tui::{
@@ -49,6 +51,8 @@ use tui::{
     backend::CrosstermBackend,
     Terminal,
 };
+
+use once_cell::sync::Lazy;
 
 enum AppState {
 	Dashboard,
@@ -417,20 +421,16 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
 
 	loop {
 		match app.app_state {
-			AppState::GameSelect => { run_gameselect(&mut app, terminal); }
-			AppState::Dashboard => { run_dashboard(&mut app, terminal, &mut last_time); }
-			AppState::NewGame => { run_newgame(&mut app, terminal); }
-            AppState::Settings => { run_settings(&mut app, terminal, &mut current_setting); }
+			AppState::GameSelect => { run_gameselect(&mut app, terminal)?; }
+			AppState::Dashboard => { run_dashboard(&mut app, terminal, &mut last_time)?; }
+			AppState::NewGame => { run_newgame(&mut app, terminal)?; }
+            AppState::Settings => { run_settings(&mut app, terminal, &mut current_setting)?; }
             AppState::Quitting => { return Ok(()); }
 		}
 	}
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-	let mut terminal = ui::ui_setup().unwrap();
-
-	run_app(&mut terminal).expect("app crashed");
-
+fn cleanup(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), io::Error> {
 	disable_raw_mode()?;
 	execute!(
 		terminal.backend_mut(),
@@ -439,5 +439,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 	)?;
 	terminal.show_cursor()?;
 
-	Ok(())
+    Ok(())
+}
+
+static TERMINAL: Lazy<Mutex<Terminal<CrosstermBackend<io::Stdout>>>> = Lazy::new(|| {
+    Mutex::new(ui::ui_setup().expect("Failed to setup UI"))
+});
+
+fn main() -> Result<(), Box<dyn Error>> {
+	let mut terminal = TERMINAL.lock().unwrap();
+
+    panic::set_hook(Box::new(|panic_info| {
+        let mut term = TERMINAL.lock().unwrap();
+        cleanup(&mut term).unwrap();
+        println!("{}", panic_info);
+    }));
+            
+	run_app(&mut terminal).expect("app crashed");
+	cleanup(&mut terminal)?;
+    
+    Ok(())
 }
