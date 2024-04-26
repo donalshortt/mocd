@@ -35,15 +35,7 @@ use serde::{
 };
 
 use std::{
-    error::Error,
-    fs::*,
-    io::{self, Read},
-    path::{Path, PathBuf},
-    time::{Duration, Instant},
-    thread,
-    net::Ipv4Addr,
-    panic,
-    sync::Mutex,
+    error::Error, fs::*, io::{self, Read}, net::Ipv4Addr, panic::{self, catch_unwind, AssertUnwindSafe}, path::{Path, PathBuf}, sync::Mutex, thread, time::{Duration, Instant}
 };
 
 use tui::{
@@ -442,21 +434,14 @@ fn cleanup(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<(), 
     Ok(())
 }
 
-static TERMINAL: Lazy<Mutex<Terminal<CrosstermBackend<io::Stdout>>>> = Lazy::new(|| {
-    Mutex::new(ui::ui_setup().expect("Failed to setup UI"))
-});
-
 fn main() -> Result<(), Box<dyn Error>> {
-	let mut terminal = TERMINAL.lock().unwrap();
-
-    panic::set_hook(Box::new(|panic_info| {
-        let mut term = TERMINAL.lock().unwrap();
-        cleanup(&mut term).unwrap();
-        println!("{}", panic_info);
+	let mut terminal = ui::ui_setup().expect("Failed to setup UI");
+    
+    let _ = catch_unwind(AssertUnwindSafe(|| {
+        run_app(&mut terminal)
     }));
-            
-	run_app(&mut terminal).expect("app crashed");
-	cleanup(&mut terminal)?;
+
+    cleanup(&mut terminal)?;
     
     Ok(())
 }
