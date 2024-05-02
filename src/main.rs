@@ -33,9 +33,10 @@ use serde::{
     Serialize,
     Serializer,
 };
+use ui::Update;
 
 use std::{
-    error::Error, fs::*, io::{self, Read}, net::Ipv4Addr, panic::{self, catch_unwind, AssertUnwindSafe}, path::{Path, PathBuf}, sync::Mutex, thread, time::{Duration, Instant}
+    error::Error, fs::*, io::{self, Read}, net::Ipv4Addr, panic::{catch_unwind, AssertUnwindSafe}, path::{Path, PathBuf}, thread, time::{Duration, Instant}
 };
 
 use tui::{
@@ -43,8 +44,6 @@ use tui::{
     backend::CrosstermBackend,
     Terminal,
 };
-
-use once_cell::sync::Lazy;
 
 enum AppState {
 	Dashboard,
@@ -58,7 +57,7 @@ pub struct App<'a> {
 	app_state: AppState,
 	games: StatefulList<'a>,
 	current_game: Option<Game>,
-    dashboard_updates: Vec<String>,
+    dashboard_updates: Vec<Update>,
     user_input: String,
     savefile_filepath: PathBuf,
     webserver_ip: Ipv4Addr,
@@ -291,10 +290,13 @@ fn run_dashboard(
 
         sender::send(&app);
 
-        app.dashboard_updates.push(String::from(
-            "Sent update as of year ".to_string()
-                + &parsed_data.date + " at " + &latest_time,
-        ));
+        let update = Update {
+            info: String::from("Sent update as of year ".to_string()
+            + &parsed_data.date + " at " + &latest_time),
+            class: ui::UpdateClass::Info,
+        };
+
+        app.dashboard_updates.push(update);
 
         app.current_game
             .as_mut()
@@ -352,6 +354,15 @@ fn update_setting(app: &mut App, setting: &Setting) {
         }
         Setting::Filepath => {
             app.savefile_filepath = PathBuf::from(&app.user_input);
+
+            if let Err(e) = app.savefile_filepath {
+                let update = Update {
+                    info: String::from("Cannot find savefile"),
+                    class: ui::UpdateClass::Warning,
+                };
+
+                app.dashboard_updates.push(update);
+            }
         }
     }
 }

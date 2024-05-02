@@ -16,6 +16,19 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 
+#[derive(Clone)]
+pub enum UpdateClass {
+    Info,
+    Warning,
+    Error
+}
+
+#[derive(Clone)]
+pub struct Update {
+    pub info: String,
+    pub class: UpdateClass
+}
+
 pub struct StatefulList<'a> {
 	pub state: ListState,
 	pub items: Vec<ListItem<'a>>,
@@ -158,7 +171,7 @@ pub fn newgame<B: Backend>(frame: &mut Frame<B>, user_input: &String) -> Result<
 pub fn dashboard<B: Backend>(
     frame: &mut Frame<B>, 
     mut updates: 
-    Vec<String>, app: &App,
+    Vec<Update>, app: &App,
     ) -> Result<(), io::Error> {
 	let chunks = Layout::default()
 		.direction(Direction::Vertical)
@@ -251,7 +264,7 @@ pub fn dashboard<B: Backend>(
 				format!("{:<9}", "INFO"),
 				Style::default().fg(Color::Blue),
 			));
-			let body = Spans::from(update.clone());
+			let body = Spans::from(update.info.clone());
 
 			ListItem::new(vec![
 				Spans::from("-".repeat(chunks[1].width as usize)),
